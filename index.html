@@ -64,6 +64,66 @@ function collectActors(shows) {
   return [...s].sort((a,b) => a.localeCompare(b, "ja"));
 }
 
+
+function exportToICS(show) {
+  const et = EVENT_TYPES[show.eventType||"show"];
+  const venue = show.venueType==="shiki" ? show.venueShiki : show.venueOther;
+  const seat = formatSeat(show);
+
+  // 日付パース
+  const [y,m,d] = show.date.split("-").map(Number);
+  let dtStart, dtEnd;
+  if (show.time) {
+    const [hh,mm] = show.time.split(":").map(Number);
+    const pad = n => String(n).padStart(2,"0");
+    // 日本時間(+09:00)をUTCに変換
+    const startUTC = new Date(Date.UTC(y,m-1,d,hh-9,mm));
+    const endUTC   = new Date(Date.UTC(y,m-1,d,hh-9+2,mm)); // 2時間後
+    const fmt = dt => dt.toISOString().replace(/[-:]/g,"").replace(".000","");
+    dtStart = fmt(startUTC);
+    dtEnd   = fmt(endUTC);
+  } else {
+    const pad = n => String(n).padStart(2,"0");
+    dtStart = `${y}${String(m).padStart(2,"0")}${String(d).padStart(2,"0")}`;
+    dtEnd   = dtStart;
+  }
+
+  const title = `【${et.label}】${show.title}`;
+  const desc  = [
+    venue && `会場: ${venue}`,
+    seat  && `座席: ${seat}`,
+    (show.castTags||[]).length>0 && `出演: ${show.castTags.join("、")}`,
+    show.memo && `メモ: ${show.memo}`,
+  ].filter(Boolean).join("\n");
+
+  const isAllDay = !show.time;
+  const dtProp = isAllDay
+    ? `DTSTART;VALUE=DATE:${dtStart}\nDTEND;VALUE=DATE:${dtEnd}`
+    : `DTSTART:${dtStart}\nDTEND:${dtEnd}`;
+
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//観劇帖//JP",
+    "BEGIN:VEVENT",
+    `UID:${show.id}@theatre-calendar`,
+    dtProp,
+    `SUMMARY:${title}`,
+    desc ? `DESCRIPTION:${desc.replace(/\n/g,"\\n")}` : "",
+    venue ? `LOCATION:${venue}` : "",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].filter(l=>l).join("\r\n");
+
+  const blob = new Blob([ics], {type:"text/calendar;charset=utf-8"});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url;
+  a.download = `${show.title}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function StarRating({ value, onChange, readonly=false }) {
   return (
     <div style={{display:"flex",gap:"4px"}}>
@@ -170,6 +230,7 @@ function ShowCard({ show, onEdit, onDelete, onActorClick, cardMode=false }) {
           </span>
         </div>
         <div style={{display:"flex",flexShrink:0}}>
+          <button onClick={()=>exportToICS(show)} title="カレンダーに追加" style={{background:"none",border:"none",color:"#305a80",cursor:"pointer",fontSize:"12px",padding:"0 5px"}}>📅</button>
           <button onClick={()=>onEdit(show)} style={{background:"none",border:"none",color:"#4a3820",cursor:"pointer",fontSize:"12px",padding:"0 5px"}}>✎</button>
           <button onClick={()=>onDelete(show.id)} style={{background:"none",border:"none",color:"#4a3820",cursor:"pointer",fontSize:"12px",padding:"0 5px"}}>✕</button>
         </div>
@@ -192,6 +253,7 @@ function ShowCard({ show, onEdit, onDelete, onActorClick, cardMode=false }) {
             </div>
             <div style={{display:"flex",gap:"2px",flexShrink:0,alignItems:"center"}}>
               {show.rating>0&&<StarRating value={show.rating} readonly/>}
+              <button onClick={()=>exportToICS(show)} title="カレンダーに追加" style={{background:"none",border:"none",color:"#305a80",cursor:"pointer",fontSize:"12px",padding:"0 4px"}}>📅</button>
               <button onClick={()=>onEdit(show)} style={{background:"none",border:"none",color:"#5a4528",cursor:"pointer",fontSize:"12px",padding:"0 4px"}}>✎</button>
               <button onClick={()=>onDelete(show.id)} style={{background:"none",border:"none",color:"#5a4528",cursor:"pointer",fontSize:"12px",padding:"0 4px"}}>✕</button>
             </div>
