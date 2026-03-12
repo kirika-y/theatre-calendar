@@ -199,7 +199,7 @@ function CastInput({ tags, onChange, allActors }) {
   );
 }
 
-function ShowCard({ show, onEdit, onDelete, onActorClick, cardMode=false }) {
+function ShowCard({ show, onEdit, onDelete, onActorClick, onDuplicate, cardMode=false }) {
   const isPast = new Date(show.date) < new Date(new Date().toDateString());
   const isToday = new Date(show.date).toDateString() === new Date().toDateString();
   const venue = show.venueType==="shiki" ? show.venueShiki : show.venueOther;
@@ -230,6 +230,7 @@ function ShowCard({ show, onEdit, onDelete, onActorClick, cardMode=false }) {
           </span>
         </div>
         <div style={{display:"flex",flexShrink:0}}>
+          <button onClick={()=>onDuplicate&&onDuplicate(show)} title="複製して追加" style={{background:"none",border:"none",color:"#507050",cursor:"pointer",fontSize:"13px",padding:"0 5px"}}>+❐</button>
           <button onClick={()=>exportToICS(show)} title="カレンダーに追加" style={{background:"none",border:"none",color:"#305a80",cursor:"pointer",fontSize:"12px",padding:"0 5px"}}>📅</button>
           <button onClick={()=>onEdit(show)} style={{background:"none",border:"none",color:"#4a3820",cursor:"pointer",fontSize:"12px",padding:"0 5px"}}>✎</button>
           <button onClick={()=>onDelete(show.id)} style={{background:"none",border:"none",color:"#4a3820",cursor:"pointer",fontSize:"12px",padding:"0 5px"}}>✕</button>
@@ -253,6 +254,7 @@ function ShowCard({ show, onEdit, onDelete, onActorClick, cardMode=false }) {
             </div>
             <div style={{display:"flex",gap:"2px",flexShrink:0,alignItems:"center"}}>
               {show.rating>0&&<StarRating value={show.rating} readonly/>}
+              <button onClick={()=>onDuplicate&&onDuplicate(show)} title="複製して追加" style={{background:"none",border:"none",color:"#507050",cursor:"pointer",fontSize:"13px",padding:"0 4px"}}>+❐</button>
               <button onClick={()=>exportToICS(show)} title="カレンダーに追加" style={{background:"none",border:"none",color:"#305a80",cursor:"pointer",fontSize:"12px",padding:"0 4px"}}>📅</button>
               <button onClick={()=>onEdit(show)} style={{background:"none",border:"none",color:"#5a4528",cursor:"pointer",fontSize:"12px",padding:"0 4px"}}>✎</button>
               <button onClick={()=>onDelete(show.id)} style={{background:"none",border:"none",color:"#5a4528",cursor:"pointer",fontSize:"12px",padding:"0 4px"}}>✕</button>
@@ -421,8 +423,17 @@ function App() {
   };
 
   const handleSave = form => {
-    persist(modal==="new" ? [...shows,{...form,id:Date.now()}] : shows.map(s=>s.id===form.id?form:s));
+    if (modal==="new" || !form.id) {
+      persist([...shows, {...form, id:Date.now()}]);
+    } else {
+      persist(shows.map(s=>s.id===form.id?form:s));
+    }
     setModal(null);
+  };
+  const handleDuplicate = show => {
+    // 日付・座席・評価・メモをリセットして新規モーダルで開く
+    const dup = {...show, id:null, date:"", time:"", seatFloor:"", seatRow:"", seatBlock:"", seatNum:"", rating:0, memo:""};
+    setModal(dup);
   };
   const handleDelete = id => { if(window.confirm("この公演を削除しますか？")) persist(shows.filter(s=>s.id!==id)); };
 
@@ -526,7 +537,7 @@ function App() {
                 : {display:"grid",gap:"0"}}>
                 {filtered(upcoming).map(s=>(
                   <ShowCard key={s.id} show={s} onEdit={setModal} onDelete={handleDelete}
-                    onActorClick={selectActor} cardMode={displayMode==="card"}/>
+                    onActorClick={selectActor} onDuplicate={handleDuplicate} cardMode={displayMode==="card"}/>
                 ))}
               </div>
         )}
@@ -539,7 +550,7 @@ function App() {
                 : {display:"grid",gap:"0"}}>
                 {filtered(past).map(s=>(
                   <ShowCard key={s.id} show={s} onEdit={setModal} onDelete={handleDelete}
-                    onActorClick={selectActor} cardMode={displayMode==="card"}/>
+                    onActorClick={selectActor} onDuplicate={handleDuplicate} cardMode={displayMode==="card"}/>
                 ))}
               </div>
         )}
@@ -604,7 +615,7 @@ function App() {
                   : <div style={{display:"grid",gap:"0"}}>
                       {(actorData?.all||[]).map(s=>(
                         <ShowCard key={s.id} show={s} onEdit={setModal} onDelete={handleDelete}
-                          onActorClick={selectActor} cardMode={false}/>
+                          onActorClick={selectActor} onDuplicate={handleDuplicate} cardMode={false}/>
                       ))}
                     </div>
                 }
