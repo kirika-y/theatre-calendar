@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="観劇帖"/>
+  <title>観劇帖</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0d0900; color: #c9a84c; font-family: 'Cormorant Garamond', serif; }
+    input, select, textarea, button { font-family: 'Cormorant Garamond', serif; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0d0900; }
+    ::-webkit-scrollbar-thumb { background: #3a2e1e; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const STORAGE_KEY = "theatre-calendar-shows-v2";
+const GENRES = ["ミュージカル","演劇","歌舞伎","宝塚","オペラ","バレエ","落語・演芸","コンサート","その他"];
+const SHIKI_NAMES = ["四季劇場〔春〕","四季劇場〔秋〕","電通四季劇場〔海〕","大阪四季劇場","名古屋MTG四季劇場","自由劇場"];
+
+// イベント種別の定義
+const EVENT_TYPES = {
+  show:    { label:"観劇",   color:"#e8c55a", bg:"#2a1e08", border:"#6a4e20", textColor:"#f5e080" },
+  sale:    { label:"発売日", color:"#5ab4e8", bg:"#081a2a", border:"#1a5080", textColor:"#80d0f5" },
+  opening: { label:"初日",   color:"#70e870", bg:"#0a2a0a", border:"#206020", textColor:"#90f090" },
+  closing: { label:"千秋楽", color:"#e87060", bg:"#2a0808", border:"#801818", textColor:"#f09080" },
+};
+
+const SHIKI_PRESETS = [
+  "ライオンキング","アナと雪の女王","美女と野獣","キャッツ","オペラ座の怪人",
+  "マンマ・ミーア！","ウィキッド","ノートルダムの鐘","ロボット・イン・ザ・ガーデン",
+  "バケモノの子","チェーザレ","ジーザス・クライスト＝スーパースター",
+  "天使にラブ・ソングを…","夢から醒めた夢","エビータ","ソング＆ダンス",
+];
+
+const emptyForm = {
+  title:"", date:"", time:"",
+  venueType:"shiki", venueShiki:SHIKI_NAMES[0], venueOther:"",
+  genre:"ミュージカル",
+  seatFloor:"", seatRow:"", seatBlock:"", seatNum:"",
+  castTags:[], memo:"", rating:0,
+  eventType:"show",
+};
+
+function formatSeat(f) {
+  const parts = [f.seatFloor, f.seatBlock&&`${f.seatBlock}ブロック`, f.seatRow, f.seatNum&&`${f.seatNum}番`];
+  return parts.filter(Boolean).join(" ");
+}
+
+function collectActors(shows) {
+  const s = new Set();
+  shows.forEach(show => (show.castTags||[]).forEach(n => n.trim() && s.add(n.trim())));
+  return [...s].sort((a,b) => a.localeCompare(b, "ja"));
+}
+
+function StarRating({ value, onChange, readonly=false }) {
+  return (
+    <div style={{display:"flex",gap:"4px"}}>
+      {[1,2,3,4,5].map(s=>(
+        <span key={s} onClick={()=>!readonly&&onChange(s)} style={{
+          cursor:readonly?"default":"pointer", fontSize:readonly?"14px":"22px",
+          color:s<=value?"#e8c55a":"#3a2e1e", userSelect:"none", transition:"color 0.1s"
+        }}>★</span>
+      ))}
+    </div>
+  );
+}
+
+function CastInput({ tags, onChange, allActors }) {
+  const [input, setInput] = useState("");
+  const [open, setOpen] = useState(false);
+  const suggestions = input.trim()
+    ? allActors.filter(a => a.includes(input.trim()) && !tags.includes(a))
+    : allActors.filter(a => !tags.includes(a));
+  const addTag = (name) => {
+    const n = name.trim();
+    if (n && !tags.includes(n)) onChange([...tags, n]);
+    setInput(""); setOpen(false);
+  };
+  const removeTag = (name) => onChange(tags.filter(t=>t!==name));
+  const handleKey = (e) => {
+    if ((e.key==="Enter"||e.key===",") && input.trim()) {
+      e.preventDefault(); addTag(input.replace(/,/g,""));
+    } else if (e.key==="Backspace" && !input && tags.length>0) {
+      removeTag(tags[tags.length-1]);
+    }
+  };
+  return (
+    <div style={{position:"relative"}}>
+      <div style={{minHeight:"38px",background:"#110d05",border:"1px solid #3a2e1e",borderRadius:"2px",
+        padding:"4px 8px",display:"flex",flexWrap:"wrap",gap:"4px",alignItems:"center",cursor:"text"}}
+        onClick={()=>document.getElementById("cast-input-field")?.focus()}>
+        {tags.map(name=>(
+          <span key={name} style={{display:"flex",alignItems:"center",gap:"4px",fontSize:"12px",
+            color:"#e8c55a",background:"#2a1e08",border:"1px solid #5a4020",padding:"1px 8px",borderRadius:"10px"}}>
+            {name}
+            <span onClick={e=>{e.stopPropagation();removeTag(name);}}
+              style={{cursor:"pointer",color:"#a07830",fontSize:"11px",lineHeight:1}}>✕</span>
+          </span>
+        ))}
+        <input id="cast-input-field" value={input}
+          onChange={e=>{setInput(e.target.value);setOpen(true);}}
+          onFocus={()=>setOpen(true)}
+          onBlur={()=>setTimeout(()=>setOpen(false),150)}
+          onKeyDown={handleKey}
+          placeholder={tags.length===0?"名前を入力、Enterで追加":""}
+          style={{flex:1,minWidth:"80px",background:"none",border:"none",outline:"none",
+            color:"#d4b87a",fontSize:"13px",fontFamily:"'Cormorant Garamond',serif",padding:"2px 0"}}/>
+      </div>
+      {open && suggestions.length>0 && (
+        <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:100,
+          background:"#1a1408",border:"1px solid #5a4020",borderTop:"none",maxHeight:"160px",overflowY:"auto"}}>
+          {suggestions.slice(0,20).map(name=>(
+            <div key={name} onMouseDown={e=>{e.preventDefault();addTag(name);}}
+              onMouseEnter={e=>e.currentTarget.style.background="#2a1e08"}
+              onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+              style={{padding:"7px 12px",fontSize:"13px",color:"#e8c55aaa",
+                fontFamily:"'Cormorant Garamond',serif",cursor:"pointer",borderBottom:"1px solid #2a2010"}}>
+              {name}
+            </div>
+          ))}
+        </div>
+      )}
+      <p style={{margin:"4px 0 0",fontSize:"10px",color:"#4a3820",letterSpacing:"1px"}}>
+        Enter・カンマで追加 / 過去の記録から候補を表示
+      </p>
+    </div>
+  );
+}
+
+function ShowCard({ show, onEdit, onDelete, onActorClick, cardMode=false }) {
+  const isPast = new Date(show.date) < new Date(new Date().toDateString());
+  const isToday = new Date(show.date).toDateString() === new Date().toDateString();
+  const venue = show.venueType==="shiki" ? show.venueShiki : show.venueOther;
+  const seat = formatSeat(show);
+  const et = EVENT_TYPES[show.eventType||"show"];
+  const isInfo = show.eventType && show.eventType !== "show";
+  return (
+    <>{!cardMode ? (
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+        padding:"8px 12px",gap:"10px",
+        borderBottom:"1px solid #1e1a10",
+        borderLeft:`3px solid ${et.color}`,
+        background: isToday?`${et.color}11`:"transparent"}}>
+        <div style={{display:"flex",alignItems:"baseline",gap:"8px",minWidth:0,flex:1}}>
+          <span style={{fontSize:"9px",letterSpacing:"1px",padding:"1px 5px",flexShrink:0,
+            background:et.bg,color:et.color,border:`1px solid ${et.border}`,whiteSpace:"nowrap"}}>
+            {et.label}
+          </span>
+          {isToday&&<span style={{background:et.color,color:"#0d0900",fontSize:"8px",
+            letterSpacing:"1px",padding:"1px 5px",fontWeight:"700",flexShrink:0}}>TODAY</span>}
+          <span style={{fontSize:"14px",fontFamily:"'Cormorant Garamond',serif",fontWeight:"700",
+            color:isPast?"#a09060":et.textColor,letterSpacing:"0.5px",
+            whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+            {show.title}
+          </span>
+          <span style={{fontSize:"11px",color:"#9a7830",fontFamily:"serif",flexShrink:0,whiteSpace:"nowrap"}}>
+            {show.date}{show.time?` ${show.time}`:""}
+          </span>
+        </div>
+        <div style={{display:"flex",flexShrink:0}}>
+          <button onClick={()=>onEdit(show)} style={{background:"none",border:"none",color:"#4a3820",cursor:"pointer",fontSize:"12px",padding:"0 5px"}}>✎</button>
+          <button onClick={()=>onDelete(show.id)} style={{background:"none",border:"none",color:"#4a3820",cursor:"pointer",fontSize:"12px",padding:"0 5px"}}>✕</button>
+        </div>
+      </div>
+    ) : (
+      <div style={{background:isInfo?"#0a0e14":isPast?"#191310":"#1c1608",
+        border:`1px solid ${isToday?et.color:isPast?"#2a2218":et.border}`,
+        borderRadius:"4px",padding:"12px 14px",position:"relative",
+        borderLeft:`3px solid ${et.color}`}}>
+        <span style={{position:"absolute",top:"8px",right:"8px",fontSize:"9px",letterSpacing:"1px",
+          padding:"1px 6px",background:et.bg,color:et.color,border:`1px solid ${et.border}`}}>
+          {et.label}{isToday&&" · TODAY"}
+        </span>
+        <div style={{opacity:isPast?0.85:1}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"8px",marginBottom:"6px"}}>
+            <div style={{minWidth:0,flex:1}}>
+              <span style={{fontSize:"9px",letterSpacing:"2px",color:"#906820"}}>{show.genre}</span>
+              <h3 style={{margin:"2px 0 0",fontSize:"15px",fontWeight:"700",
+                color:isPast?"#d0a85a":"#f5e080",letterSpacing:"0.5px",lineHeight:1.3}}>{show.title}</h3>
+            </div>
+            <div style={{display:"flex",gap:"2px",flexShrink:0,alignItems:"center"}}>
+              {show.rating>0&&<StarRating value={show.rating} readonly/>}
+              <button onClick={()=>onEdit(show)} style={{background:"none",border:"none",color:"#5a4528",cursor:"pointer",fontSize:"12px",padding:"0 4px"}}>✎</button>
+              <button onClick={()=>onDelete(show.id)} style={{background:"none",border:"none",color:"#5a4528",cursor:"pointer",fontSize:"12px",padding:"0 4px"}}>✕</button>
+            </div>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:"6px"}}>
+            <span style={{fontSize:"11px",color:"#c0a045"}}>{show.date}{show.time?` ${show.time}`:""}</span>
+            {venue&&<span style={{fontSize:"11px",color:"#b08838"}}>· {venue}</span>}
+            {seat&&<span style={{fontSize:"10px",color:"#e8c55a99",fontFamily:"monospace",
+              background:"#140f04",padding:"0 5px",border:"1px solid #2a2010"}}>{seat}</span>}
+            {(show.castTags||[]).map(name=>(
+              <span key={name}
+                onClick={e=>{e.stopPropagation();onActorClick&&onActorClick(name);}}
+                onMouseEnter={e=>{if(onActorClick)e.currentTarget.style.color="#e8c55a";}}
+                onMouseLeave={e=>{e.currentTarget.style.color="#c09840";}}
+                style={{fontSize:"11px",color:"#c09840",fontStyle:"italic",
+                  cursor:onActorClick?"pointer":"default",transition:"color 0.1s"}}>{name}</span>
+            ))}
+          </div>
+          {show.memo&&(
+            <p style={{margin:"6px 0 0",fontSize:"11px",color:"#b09050",
+              borderTop:"1px solid #221c10",paddingTop:"6px",fontStyle:"italic",lineHeight:1.5}}>
+              "{show.memo}"
+            </p>
+          )}
+        </div>
+      </div>
+    )}</>
+  );
+}
+
+function Modal({ show, onClose, onSave, allActors }) {
+  const [form, setForm] = useState(show ? {...show, castTags: show.castTags||[]} : {...emptyForm});
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const isShiki = form.venueType === "shiki";
+  const inp = {width:"100%",background:"#110d05",border:"1px solid #3a2e1e",borderRadius:"2px",
+    color:"#d4b87a",padding:"8px 10px",fontSize:"13px",fontFamily:"'Cormorant Garamond',serif",
+    outline:"none",boxSizing:"border-box"};
+  const lbl = {display:"block",fontSize:"10px",letterSpacing:"2px",color:"#a07830",marginBottom:"4px",textTransform:"uppercase"};
+  const tabBtn = active => ({padding:"3px 12px",fontFamily:"'Cormorant Garamond',serif",
+    fontSize:"11px",letterSpacing:"1px",cursor:"pointer",
+    background:active?"#3a2a10":"none",border:`1px solid ${active?"#8a6520":"#3a2e1e"}`,
+    color:active?"#e8c55a":"#a07830"});
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",
+      display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"16px"}}
+      onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:"linear-gradient(160deg,#1a1408,#221808)",border:"1px solid #5a4520",
+        borderRadius:"4px",padding:"24px",width:"100%",maxWidth:"520px",maxHeight:"92vh",overflowY:"auto",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.8)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}}>
+          <h2 style={{margin:0,fontSize:"20px",color:"#e8c55a",letterSpacing:"2px"}}>{show?"公演を編集":"公演を追加"}</h2>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"#906820",fontSize:"18px",cursor:"pointer"}}>✕</button>
+        </div>
+        <div style={{display:"grid",gap:"14px"}}>
+          {/* イベント種別 */}
+          <div>
+            <label style={lbl}>種別</label>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px"}}>
+              {Object.entries(EVENT_TYPES).map(([k,et])=>(
+                <button key={k} onClick={()=>set("eventType",k)} style={{
+                  padding:"6px 0",textAlign:"center",fontSize:"12px",letterSpacing:"0.5px",cursor:"pointer",
+                  background:form.eventType===k?et.bg:"none",
+                  border:`1px solid ${form.eventType===k?et.color:"#2a2010"}`,
+                  color:form.eventType===k?et.color:"#5a4520",
+                }}>
+                  {et.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* タイトル */}
+          <div>
+            <label style={lbl}>公演タイトル *</label>
+            <div style={{position:"relative"}}>
+              <input style={inp} value={form.title} onChange={e=>set("title",e.target.value)}
+                placeholder="例: ライオンキング" list="shiki-presets"/>
+              <datalist id="shiki-presets">
+                {SHIKI_PRESETS.map(p=><option key={p} value={p}/>)}
+              </datalist>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+            <div><label style={lbl}>日付 *</label>
+              <input type="date" style={inp} value={form.date} onChange={e=>set("date",e.target.value)}/></div>
+            <div><label style={lbl}>時間</label>
+              <input type="time" style={inp} value={form.time} onChange={e=>set("time",e.target.value)}/></div>
+          </div>
+          <div><label style={lbl}>ジャンル</label>
+            <select style={inp} value={form.genre} onChange={e=>set("genre",e.target.value)}>
+              {GENRES.map(g=><option key={g} value={g}>{g}</option>)}
+            </select></div>
+          <div>
+            <label style={lbl}>劇場・会場</label>
+            <div style={{display:"flex",gap:"8px",marginBottom:"8px"}}>
+              {[["shiki","四季劇場"],["other","その他"]].map(([v,l])=>(
+                <button key={v} onClick={()=>set("venueType",v)} style={tabBtn(form.venueType===v)}>{l}</button>
+              ))}
+            </div>
+            {isShiki
+              ? <select style={inp} value={form.venueShiki} onChange={e=>set("venueShiki",e.target.value)}>
+                  {SHIKI_NAMES.map(n=><option key={n} value={n}>{n}</option>)}
+                </select>
+              : <input style={inp} value={form.venueOther} onChange={e=>set("venueOther",e.target.value)} placeholder="劇場名を入力"/>}
+          </div>
+          <div><label style={lbl}>座席</label>
+            <div style={{display:"grid",gridTemplateColumns:"80px 1fr 1fr 1fr",gap:"8px"}}>
+              <div><label style={{...lbl,marginBottom:"2px"}}>階</label>
+                <select style={inp} value={form.seatFloor} onChange={e=>set("seatFloor",e.target.value)}>
+                  <option value="">-</option><option>1階</option><option>2階</option><option>3階</option>
+                </select></div>
+              <div><label style={{...lbl,marginBottom:"2px"}}>ブロック</label>
+                <select style={inp} value={form.seatBlock} onChange={e=>set("seatBlock",e.target.value)}>
+                  <option value="">-</option><option>センター</option><option>左サイド</option><option>右サイド</option>
+                </select></div>
+              <div><label style={{...lbl,marginBottom:"2px"}}>列</label>
+                <input style={inp} value={form.seatRow} onChange={e=>set("seatRow",e.target.value)} placeholder="例: K"/></div>
+              <div><label style={{...lbl,marginBottom:"2px"}}>番号</label>
+                <input style={inp} value={form.seatNum} onChange={e=>set("seatNum",e.target.value)} placeholder="例: 24"/></div>
+            </div>
+          </div>
+          <div><label style={lbl}>出演者</label>
+            <CastInput tags={form.castTags||[]} onChange={tags=>set("castTags",tags)} allActors={allActors}/></div>
+          <div><label style={lbl}>評価</label>
+            <StarRating value={form.rating} onChange={v=>set("rating",v)}/></div>
+          <div><label style={lbl}>感想メモ</label>
+            <textarea style={{...inp,resize:"vertical",minHeight:"80px",lineHeight:1.7}}
+              value={form.memo} onChange={e=>set("memo",e.target.value)}
+              placeholder="感想、印象に残ったシーンなど..."/></div>
+        </div>
+        <div style={{display:"flex",gap:"10px",marginTop:"18px",justifyContent:"flex-end"}}>
+          <button onClick={onClose} style={{padding:"8px 20px",background:"none",border:"1px solid #3a2e1e",
+            color:"#a07830",cursor:"pointer",fontSize:"13px",letterSpacing:"1px"}}>キャンセル</button>
+          <button onClick={()=>form.title&&form.date&&onSave(form)} style={{padding:"8px 24px",
+            background:form.title&&form.date?"linear-gradient(135deg,#8a6520,#c9a84c)":"#2a2010",
+            border:"none",color:form.title&&form.date?"#1a1008":"#4a3820",
+            cursor:form.title&&form.date?"pointer":"not-allowed",
+            fontSize:"13px",letterSpacing:"1px",fontWeight:"700"}}>保存する</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [shows, setShows] = useState([]);
+  const [view, setView] = useState("upcoming");
+  const [modal, setModal] = useState(null);
+  const [filter, setFilter] = useState("全て");
+  const [calMonth, setCalMonth] = useState(new Date());
+  const [selectedActor, setSelectedActor] = useState(null);
+  const [displayMode, setDisplayMode] = useState("list");
+
+  const selectActor = (name) => { setSelectedActor(name); setView("actor"); };
+
+  useEffect(()=>{
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if(saved) setShows(JSON.parse(saved));
+    } catch(e) {}
+  },[]);
+
+  const persist = (arr) => {
+    setShows(arr);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch(e) {}
+  };
+
+  const handleSave = form => {
+    persist(modal==="new" ? [...shows,{...form,id:Date.now()}] : shows.map(s=>s.id===form.id?form:s));
+    setModal(null);
+  };
+  const handleDelete = id => { if(window.confirm("この公演を削除しますか？")) persist(shows.filter(s=>s.id!==id)); };
+
+  const today = new Date(new Date().toDateString());
+  const upcoming = shows.filter(s=>new Date(s.date)>=today).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const past = shows.filter(s=>new Date(s.date)<today).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const genres = ["全て",...GENRES.filter(g=>shows.some(s=>s.genre===g))];
+  const filtered = list => filter==="全て" ? list : list.filter(s=>s.genre===filter);
+
+  const yr=calMonth.getFullYear(), mo=calMonth.getMonth();
+  const firstDay=new Date(yr,mo,1).getDay(), dim=new Date(yr,mo+1,0).getDate();
+  const calDays=Array.from({length:firstDay+dim},(_,i)=>i>=firstDay?i-firstDay+1:null);
+  const inMonth=shows.filter(s=>{const d=new Date(s.date);return d.getFullYear()===yr&&d.getMonth()===mo;});
+
+  const actorData = selectedActor ? (()=>{
+    const all = shows.filter(s=>(s.castTags||[]).includes(selectedActor));
+    const pastS = all.filter(s=>new Date(s.date)<today);
+    const upS = all.filter(s=>new Date(s.date)>=today);
+    const rated = pastS.filter(s=>s.rating>0);
+    const avg = rated.length>0 ? (rated.reduce((a,s)=>a+s.rating,0)/rated.length).toFixed(1) : null;
+    return { all: all.sort((a,b)=>new Date(b.date)-new Date(a.date)), pastS, upS, avg };
+  })() : null;
+
+  const navBtn = a => ({padding:"6px 16px",
+    background:a?"linear-gradient(135deg,#8a6520,#c9a84c)":"none",
+    border:a?"none":"1px solid #3a2e1e",color:a?"#1a1008":"#c4a84a",
+    cursor:"pointer",fontSize:"11px",letterSpacing:"2px",textTransform:"uppercase"});
+
+  const empty = (msg,icon) => (
+    <div style={{textAlign:"center",padding:"60px 20px",color:"#3a2e1e",fontSize:"14px",letterSpacing:"2px"}}>
+      <div style={{fontSize:"32px",marginBottom:"12px"}}>{icon}</div>{msg}
+    </div>
+  );
+
+  return (
+    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at top,#1a1005 0%,#0d0900 60%)",
+      color:"#e8c55a",fontFamily:"'Cormorant Garamond',serif"}}>
+
+      <header style={{borderBottom:"1px solid #2a2010",padding:"10px 16px 0",
+        background:"linear-gradient(180deg,#0d0900,#110d02)",position:"sticky",top:0,zIndex:50}}>
+        <div style={{maxWidth:"800px",margin:"0 auto"}}>
+          {/* 1行目: タイトル + 追加ボタン */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}>
+            <div style={{display:"flex",alignItems:"baseline",gap:"7px"}}>
+              <h1 style={{margin:0,fontSize:"20px",letterSpacing:"3px",fontWeight:"700",fontStyle:"italic",
+                color:"#e8c55a",textShadow:"0 0 20px rgba(201,168,76,0.3)"}}>観劇帖</h1>
+              <span style={{fontSize:"9px",letterSpacing:"2px",color:"#886018"}}>JOURNAL</span>
+            </div>
+            <button onClick={()=>setModal("new")} style={{padding:"5px 14px",
+              background:"linear-gradient(135deg,#8a6520,#c9a84c)",border:"none",color:"#1a1008",
+              cursor:"pointer",fontSize:"13px",letterSpacing:"1px",fontWeight:"700",
+              fontFamily:"'Cormorant Garamond',serif"}}>＋ 追加</button>
+          </div>
+          {/* 2行目: タブ（幅いっぱいに均等配置） */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"4px",paddingBottom:"10px"}}>
+            {[["upcoming","予定"],["past","鑑賞済"],["calendar","暦"],["actor","役者"]].map(([k,l])=>(
+              <button key={k} onClick={()=>{ setView(k); if(k!=="actor") setSelectedActor(null); }}
+                style={{padding:"6px 0",textAlign:"center",
+                  background:view===k?"linear-gradient(135deg,#8a6520,#c9a84c)":"none",
+                  border:view===k?"none":"1px solid #2a2010",
+                  color:view===k?"#1a1008":"#b08838",
+                  cursor:"pointer",fontSize:"13px",letterSpacing:"1px",
+                  fontFamily:"'Cormorant Garamond',serif"}}>{l}</button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      <main style={{maxWidth:"800px",margin:"0 auto",padding:"16px"}}>
+
+        {view!=="calendar"&&view!=="actor"&&(
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px",marginBottom:"14px"}}>
+            <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+              {genres.length>1&&genres.map(g=>(
+                <button key={g} onClick={()=>setFilter(g)} style={{
+                  padding:"3px 12px",background:filter===g?"#3a2a10":"none",
+                  border:`1px solid ${filter===g?"#8a6520":"#2a2010"}`,
+                  color:filter===g?"#e8c55a":"#906820",cursor:"pointer",fontSize:"11px",letterSpacing:"1px"}}>
+                  {g}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:"4px"}}>
+              {[["list","☰"],["card","⊞"]].map(([m,icon])=>(
+                <button key={m} onClick={()=>setDisplayMode(m)} style={{
+                  padding:"3px 10px",background:displayMode===m?"#3a2a10":"none",
+                  border:`1px solid ${displayMode===m?"#8a6520":"#2a2010"}`,
+                  color:displayMode===m?"#e8c55a":"#906820",cursor:"pointer",fontSize:"13px",lineHeight:1}}>
+                  {icon}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {view==="upcoming"&&(
+          filtered(upcoming).length===0
+            ? empty("予定している公演はありません","🎭")
+            : <div style={displayMode==="card"
+                ? {display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:"10px"}
+                : {display:"grid",gap:"0"}}>
+                {filtered(upcoming).map(s=>(
+                  <ShowCard key={s.id} show={s} onEdit={setModal} onDelete={handleDelete}
+                    onActorClick={selectActor} cardMode={displayMode==="card"}/>
+                ))}
+              </div>
+        )}
+
+        {view==="past"&&(
+          filtered(past).length===0
+            ? empty("鑑賞済みの記録はありません","📖")
+            : <div style={displayMode==="card"
+                ? {display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:"10px"}
+                : {display:"grid",gap:"0"}}>
+                {filtered(past).map(s=>(
+                  <ShowCard key={s.id} show={s} onEdit={setModal} onDelete={handleDelete}
+                    onActorClick={selectActor} cardMode={displayMode==="card"}/>
+                ))}
+              </div>
+        )}
+
+        {view==="actor"&&(
+          <div>
+            {!selectedActor ? (
+              <div>
+                <p style={{margin:"0 0 16px",fontSize:"11px",color:"#906820",letterSpacing:"2px",textTransform:"uppercase"}}>
+                  役者を選んで鑑賞履歴を確認
+                </p>
+                {collectActors(shows).length===0
+                  ? empty("公演に役者を登録するとここに表示されます","🎭")
+                  : <div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>
+                      {collectActors(shows).map(name=>{
+                        const cnt = shows.filter(s=>(s.castTags||[]).includes(name)).length;
+                        const rated = shows.filter(s=>(s.castTags||[]).includes(name)&&s.rating>0);
+                        const avg = rated.length>0?(rated.reduce((a,s)=>a+s.rating,0)/rated.length).toFixed(1):null;
+                        return (
+                          <button key={name} onClick={()=>setSelectedActor(name)}
+                            onMouseEnter={e=>{e.currentTarget.style.background="#2a1e08";e.currentTarget.style.borderColor="#e8c55a";}}
+                            onMouseLeave={e=>{e.currentTarget.style.background="#1e1608";e.currentTarget.style.borderColor="#886018";}}
+                            style={{padding:"10px 18px",background:"#1e1608",border:"1px solid #5a4020",
+                              color:"#e8c55a",cursor:"pointer",fontSize:"15px",letterSpacing:"1px",textAlign:"left",
+                              display:"flex",flexDirection:"column",gap:"4px",transition:"all 0.15s",minWidth:"120px"}}>
+                            <span>{name}</span>
+                            <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+                              <span style={{fontSize:"10px",color:"#a07830",background:"#110d05",
+                                padding:"1px 7px",borderRadius:"8px",fontFamily:"monospace"}}>{cnt}本</span>
+                              {avg&&<span style={{fontSize:"10px",color:"#8a6030"}}>★{avg}</span>}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                }
+              </div>
+            ) : (
+              <div>
+                <button onClick={()=>setSelectedActor(null)} style={{background:"none",border:"1px solid #3a2e1e",
+                  color:"#c4a84a",cursor:"pointer",padding:"5px 14px",fontSize:"13px",letterSpacing:"1px",marginBottom:"20px"}}>
+                  ‹ 役者一覧
+                </button>
+                <div style={{marginBottom:"20px",paddingBottom:"16px",borderBottom:"1px solid #3a2810"}}>
+                  <p style={{margin:"0 0 2px",fontSize:"10px",letterSpacing:"4px",color:"#906820"}}>ACTOR</p>
+                  <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",flexWrap:"wrap",gap:"8px"}}>
+                    <h2 style={{margin:0,fontSize:"26px",fontWeight:"700",fontStyle:"italic",
+                      color:"#e8d5a0",letterSpacing:"2px"}}>{selectedActor}</h2>
+                    {actorData&&(
+                      <div style={{textAlign:"right",paddingBottom:"2px"}}>
+                        <div style={{fontSize:"12px",color:"#906820",letterSpacing:"1px"}}>
+                          {actorData.upS.length>0&&<span style={{color:"#8a6530",marginRight:"6px"}}>{actorData.upS.length}本予定</span>}
+                          {actorData.pastS.length}本鑑賞済
+                        </div>
+                        {actorData.avg&&<div style={{fontSize:"15px",color:"#e8c55a",marginTop:"3px"}}>平均 ★{actorData.avg}</div>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {actorData&&actorData.all.length===0
+                  ? empty("公演記録がありません","🎭")
+                  : <div style={{display:"grid",gap:"0"}}>
+                      {(actorData?.all||[]).map(s=>(
+                        <ShowCard key={s.id} show={s} onEdit={setModal} onDelete={handleDelete}
+                          onActorClick={selectActor} cardMode={false}/>
+                      ))}
+                    </div>
+                }
+              </div>
+            )}
+          </div>
+        )}
+
+        {view==="calendar"&&(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+              <button onClick={()=>setCalMonth(new Date(yr,mo-1))} style={{background:"none",border:"1px solid #3a2e1e",color:"#c4a84a",cursor:"pointer",padding:"4px 12px",fontSize:"16px"}}>‹</button>
+              <h2 style={{margin:0,fontSize:"18px",letterSpacing:"3px",color:"#e8c55a"}}>{yr}年 {mo+1}月</h2>
+              <button onClick={()=>setCalMonth(new Date(yr,mo+1))} style={{background:"none",border:"1px solid #3a2e1e",color:"#c4a84a",cursor:"pointer",padding:"4px 12px",fontSize:"16px"}}>›</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"2px",marginBottom:"2px"}}>
+              {["日","月","火","水","木","金","土"].map((d,i)=>(
+                <div key={d} style={{textAlign:"center",fontSize:"10px",letterSpacing:"1px",
+                  color:i===0?"#8a3030":i===6?"#305080":"#906820",padding:"6px 0"}}>{d}</div>
+              ))}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"2px"}}>
+              {calDays.map((day,i)=>{
+                if(!day) return <div key={`e-${i}`}/>;
+                const ds=`${yr}-${String(mo+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+                const ds2=inMonth.filter(s=>s.date===ds);
+                const isT=ds===new Date().toISOString().slice(0,10);
+                const dow=(firstDay+day-1)%7;
+                return (
+                  <div key={day} style={{background:isT?"rgba(201,168,76,0.1)":"rgba(255,255,255,0.02)",
+                    border:isT?"1px solid #c9a84c":"1px solid #1e1808",minHeight:"60px",padding:"5px"}}>
+                    <span style={{fontSize:"11px",color:isT?"#e8c55a":dow===0?"#8a3030":dow===6?"#305080":"#a07830"}}>{day}</span>
+                    <div style={{marginTop:"2px",display:"flex",flexDirection:"column",gap:"1px"}}>
+                      {ds2.map(s=>{
+                        const et = EVENT_TYPES[s.eventType||"show"];
+                        return (
+                          <div key={s.id} onClick={()=>setModal(s)} title={`[${et.label}] ${s.title}`} style={{
+                            fontSize:"9px",background:et.bg,color:et.color,padding:"1px 3px",
+                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                            cursor:"pointer",borderLeft:`2px solid ${et.color}`}}>
+                            {s.title}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {modal&&<Modal show={modal==="new"?null:modal} onClose={()=>setModal(null)} onSave={handleSave} allActors={collectActors(shows)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
