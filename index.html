@@ -13,6 +13,7 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { overflow-x: hidden; max-width: 100vw; }
     body { background: #0d0900; color: #c9a84c; font-family: 'Cormorant Garamond', serif; }
     input, select, textarea, button { font-family: 'Cormorant Garamond', serif; }
     ::-webkit-scrollbar { width: 4px; }
@@ -60,27 +61,36 @@ const emptyForm = {
 const SHOW_EMOJI = {
   "ライオンキング": "🦁",
   "アナと雪の女王": "❄️",
-  "美女と野獣": "🌹",
+  "美女と野獣": "🥀",
   "オペラ座の怪人": "🎭",
-  "アラジン": "🪔",
+  "アラジン": "🧞‍♂️",
   "ウィキッド": "🧙",
-  "マンマ・ミーア！": "🎵",
+  "マンマ・ミーア！": "🇬🇷",
   "キャッツ": "🐱",
   "ゴースト＆レディ": "👻",
   "バック・トゥ・ザ・フューチャー": "⚡",
-  "カモメに飛ぶことを教えた猫": "🐦",
+  "カモメに飛ぶことを教えた猫": "🕊️",
   "恋におちたシェイクスピア": "🖊️",
-  "赤毛のアン": "🍀",
-  "ふたりのロッテ": "👯",
+  "赤毛のアン": "👒",
+  "ふたりのロッテ": "👭",
   "王子と少年": "👑",
   "はじまりの樹の神話～こそあどの森の物語～": "🌳",
+  "恋におちたシェイクスピア": "🪶",
+  "浅利演出事務所主催公演『思い出を売る男』": "🎷",
+  "浅利演出事務所主催公演『ユタと不思議な仲間たち』": "🌾",
+  "浅利演出事務所主催公演『ミュージカル李香蘭』": "🇨🇳",
   "ジーザス・クライスト＝スーパースター［エルサレム］": "✝️",
 };
 
 function getShowEmoji(title) {
+  // 完全一致
   if (SHOW_EMOJI[title]) return SHOW_EMOJI[title];
-  // 登録なければ最初の1文字
-  return title.charAt(0);
+  // 部分一致（編集で公演名が微妙に変わった場合も対応）
+  const key = Object.keys(SHOW_EMOJI).find(k => title.includes(k) || k.includes(title));
+  if (key) return SHOW_EMOJI[key];
+  // 登録なければ最初の1文字（漢字・ひらがな）
+  const first = [...title][0] || "？";
+  return first;
 }
 
 function formatSeat(f) {
@@ -601,7 +611,7 @@ function App() {
                 </p>
                 {collectActors(shows).length===0
                   ? empty("公演に役者を登録するとここに表示されます","🎭")
-                  : <div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>
+                  : <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
                       {collectActors(shows)
                         .map(name=>({ name, cnt: shows.filter(s=>(s.castTags||[]).includes(name)).length }))
                         .sort((a,b)=>b.cnt-a.cnt)
@@ -609,12 +619,14 @@ function App() {
                           <button key={name} onClick={()=>setSelectedActor(name)}
                             onMouseEnter={e=>{e.currentTarget.style.background="#2a1e08";e.currentTarget.style.borderColor="#e8c55a";}}
                             onMouseLeave={e=>{e.currentTarget.style.background="#1e1608";e.currentTarget.style.borderColor="#886018";}}
-                            style={{padding:"10px 18px",background:"#1e1608",border:"1px solid #5a4020",
-                              color:"#e8c55a",cursor:"pointer",fontSize:"15px",letterSpacing:"1px",textAlign:"left",
-                              display:"flex",flexDirection:"column",gap:"4px",transition:"all 0.15s",minWidth:"120px"}}>
-                            <span>{name}</span>
+                            style={{padding:"7px 10px",background:"#1e1608",border:"1px solid #3a2e1e",
+                              color:"#e8c55a",cursor:"pointer",fontSize:"14px",letterSpacing:"0.5px",
+                              textAlign:"left",display:"flex",alignItems:"center",
+                              justifyContent:"space-between",gap:"6px",transition:"all 0.15s",
+                              minWidth:0}}>
+                            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{name}</span>
                             <span style={{fontSize:"10px",color:"#a07830",background:"#110d05",
-                              padding:"1px 7px",borderRadius:"8px",fontFamily:"monospace",alignSelf:"flex-start"}}>{cnt}本</span>
+                              padding:"1px 6px",borderRadius:"8px",fontFamily:"monospace",flexShrink:0}}>{cnt}</span>
                           </button>
                         ))
                       }
@@ -699,7 +711,8 @@ function App() {
                         background:"#161008",border:"1px solid #2a2010",borderRadius:"2px",
                         borderLeft:`3px solid ${stat.count>=10?"#e8c55a":stat.count>=5?"#c0a045":"#6a5020"}`}}>
                         <div>
-                          <div style={{fontSize:"14px",color:"#f0d870",fontWeight:"700",letterSpacing:"0.5px",marginBottom:"4px"}}>
+                          <div style={{fontSize:"14px",color:"#f0d870",fontWeight:"700",letterSpacing:"0.5px",marginBottom:"4px",
+                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                             {title}
                           </div>
                           <div style={{height:"4px",background:"#1e1808",borderRadius:"2px",overflow:"hidden"}}>
