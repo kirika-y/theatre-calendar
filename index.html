@@ -700,7 +700,7 @@ function App() {
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"2px",marginBottom:"2px"}}>
               {["日","月","火","水","木","金","土"].map((d,i)=>(
                 <div key={d} style={{textAlign:"center",fontSize:"10px",
-                  color:i===0?"#8a3030":i===6?"#305080":"#906820",padding:"6px 0"}}>{d}</div>
+                  color:i===0?"#c05050":i===6?"#4070b0":"#c0a060",padding:"6px 0",fontWeight:"600"}}>{d}</div>
               ))}
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"2px"}}>
@@ -714,7 +714,7 @@ function App() {
                   <div key={day} style={{background:isT?"rgba(201,168,76,0.1)":"rgba(255,255,255,0.02)",
                     border:isT?"1px solid #c9a84c":"1px solid #1e1808",minHeight:"60px",padding:"4px",
                     minWidth:0,overflow:"hidden"}}>
-                    <span style={{fontSize:"11px",color:isT?"#e8c55a":dow===0?"#8a3030":dow===6?"#305080":"#a07830"}}>{day}</span>
+                    <span style={{fontSize:"13px",fontWeight:"700",color:isT?"#e8c55a":dow===0?"#c05050":dow===6?"#4070b0":"#c8a84a"}}>{day}</span>
                     <div style={{marginTop:"2px",display:"flex",flexDirection:"column",gap:"1px"}}>
                       {ds2.map(s=>{
                         const et=EVENT_TYPES[s.eventType||"show"];
@@ -794,10 +794,10 @@ function App() {
                             return (
                               <div key={s.id} style={{display:"flex",alignItems:"baseline",gap:"8px",
                                 padding:"5px 8px",borderBottom:"1px solid #1a1408",minWidth:0}}>
-                                <span style={{fontSize:"11px",color:"#7a6030",flexShrink:0,fontFamily:"monospace"}}>{s.date.slice(5)}</span>
-                                <span style={{fontSize:"14px",color:"#e0cc80",fontWeight:"600",flex:1,
+                                <span style={{fontSize:"12px",color:"#b09050",flexShrink:0,fontFamily:"monospace",fontWeight:"600"}}>{s.date.slice(5)}</span>
+                                <span style={{fontSize:"14px",color:"#f0dc90",fontWeight:"700",flex:1,
                                   whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.title}</span>
-                                {venue&&<span style={{fontSize:"10px",color:"#6a5020",flexShrink:0,whiteSpace:"nowrap"}}>{venue}</span>}
+                                {venue&&<span style={{fontSize:"11px",color:"#9a7840",flexShrink:0,whiteSpace:"nowrap"}}>{venue}</span>}
                                 {s.rating>0&&<span style={{fontSize:"10px",color:"#c0a040",flexShrink:0}}>★{s.rating}</span>}
                               </div>
                             );
