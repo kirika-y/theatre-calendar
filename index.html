@@ -780,7 +780,7 @@ function App() {
               {statsTab==="year"&&(
                 <div style={{display:"grid",gap:"20px"}}>
                   {years.map(year=>{
-                    const ys=yearMap[year].sort((a,b)=>new Date(a.date)-new Date(b.date));
+                    const ys=yearMap[year].sort((a,b)=>new Date(b.date)-new Date(a.date));
                     return (
                       <div key={year}>
                         <div style={{display:"flex",alignItems:"baseline",gap:"10px",marginBottom:"8px",
