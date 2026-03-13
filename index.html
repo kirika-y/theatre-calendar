@@ -486,10 +486,16 @@ function App() {
                 color:"#e8c55a",textShadow:"0 0 20px rgba(201,168,76,0.3)"}}>観劇帖</h1>
               <span style={{fontSize:"9px",letterSpacing:"2px",color:"#886018"}}>JOURNAL</span>
             </div>
-            <button onClick={()=>setModal("new")} style={{padding:"5px 14px",
-              background:"linear-gradient(135deg,#8a6520,#c9a84c)",border:"none",color:"#1a1008",
-              cursor:"pointer",fontSize:"13px",letterSpacing:"1px",fontWeight:"700",
-              fontFamily:"'Cormorant Garamond',serif"}}>＋ 追加</button>
+            <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+              <button onClick={()=>setModal("new")} style={{padding:"5px 14px",
+                background:"linear-gradient(135deg,#8a6520,#c9a84c)",border:"none",color:"#1a1008",
+                cursor:"pointer",fontSize:"13px",letterSpacing:"1px",fontWeight:"700",
+                fontFamily:"'Cormorant Garamond',serif"}}>＋ 追加</button>
+              <button onClick={()=>setShowImport(true)} title="過去の記録をインポート" style={{
+                padding:"5px 10px",background:"none",border:"1px solid #3a2e1e",
+                color:"#906820",cursor:"pointer",fontSize:"13px",
+                fontFamily:"'Cormorant Garamond',serif"}}>↓ 記録</button>
+            </div>
           </div>
           {/* 2行目: タブ（幅いっぱいに均等配置） */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"4px",paddingBottom:"10px"}}>
