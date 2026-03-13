@@ -681,8 +681,7 @@ function App() {
             if(s.rating>0) titleMap[s.title].ratings.push(s.rating);
             titleMap[s.title].dates.push(s.date);
           });
-          const titleStats = Object.entries(titleMap)
-            .sort((a,b)=>b[1].count-a[1].count);
+          const titleStats = Object.entries(titleMap).sort((a,b)=>b[1].count-a[1].count);
 
           // 年別集計
           const yearMap = {};
@@ -709,79 +708,79 @@ function App() {
               </div>
 
               {/* 演目別 */}
-              {statsTab==="title"&&<div>
-                <p style={{margin:"0 0 14px",fontSize:"10px",letterSpacing:"3px",color:"#906820",textTransform:"uppercase"}}>
-                  演目別 観劇回数
-                </p>
-                <div style={{display:"grid",gap:"6px"}}>
-                  {titleStats.map(([title,stat])=>{
-                    const avg = stat.ratings.length>0
-                      ? (stat.ratings.reduce((a,b)=>a+b,0)/stat.ratings.length).toFixed(1) : null;
-                    return (
-                      <div key={title} style={{display:"flex",alignItems:"center",gap:"8px",
-                        padding:"7px 10px",background:"#161008",border:"1px solid #2a2010",
-                        borderLeft:`3px solid ${stat.count>=10?"#e8c55a":stat.count>=5?"#c0a045":"#6a5020"}`,
-                        minWidth:0}}>
-                        <span style={{fontSize:"14px",color:"#f0d870",fontWeight:"700",flex:1,
-                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          {title}
-                        </span>
-                        {avg&&<span style={{fontSize:"11px",color:"#b08838",flexShrink:0}}>★{avg}</span>}
-                        <span style={{fontSize:"16px",color:"#e8c55a",fontWeight:"700",flexShrink:0,
-                          minWidth:"3em",textAlign:"right"}}>
-                          {stat.count}<span style={{fontSize:"10px",color:"#906820",marginLeft:"1px"}}>回</span>
-                        </span>
-                      </div>
-                    );
-                  })}
+              {statsTab==="title"&&(
+                <div>
+                  <p style={{margin:"0 0 14px",fontSize:"10px",letterSpacing:"3px",color:"#906820",textTransform:"uppercase"}}>
+                    演目別 観劇回数
+                  </p>
+                  <div style={{display:"grid",gap:"4px"}}>
+                    {titleStats.map(([title,stat])=>{
+                      const avg = stat.ratings.length>0
+                        ? (stat.ratings.reduce((a,b)=>a+b,0)/stat.ratings.length).toFixed(1) : null;
+                      return (
+                        <div key={title} style={{display:"flex",alignItems:"center",gap:"8px",
+                          padding:"7px 10px",background:"#161008",border:"1px solid #2a2010",
+                          borderLeft:`3px solid ${stat.count>=10?"#e8c55a":stat.count>=5?"#c0a045":"#6a5020"}`,
+                          minWidth:0}}>
+                          <span style={{fontSize:"14px",color:"#f0d870",fontWeight:"700",flex:1,
+                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                            {title}
+                          </span>
+                          {avg&&<span style={{fontSize:"11px",color:"#b08838",flexShrink:0}}>★{avg}</span>}
+                          <span style={{fontSize:"16px",color:"#e8c55a",fontWeight:"700",flexShrink:0,
+                            minWidth:"3em",textAlign:"right"}}>
+                            {stat.count}<span style={{fontSize:"10px",color:"#906820",marginLeft:"1px"}}>回</span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-
-              </div>}
+              )}
 
               {/* 年別 */}
-              {statsTab==="year"&&<div>
-                <p style={{margin:"0 0 14px",fontSize:"10px",letterSpacing:"3px",color:"#906820",textTransform:"uppercase"}}>
-                  年別 観劇記録
-                </p>
-                <div style={{display:"grid",gap:"20px"}}>
-                  {years.map(year=>{
-                    const ys = yearMap[year].sort((a,b)=>new Date(a.date)-new Date(b.date));
-                    return (
-                      <div key={year}>
-                        <div style={{display:"flex",alignItems:"baseline",gap:"10px",
-                          marginBottom:"8px",paddingBottom:"6px",borderBottom:"1px solid #2a2010"}}>
-                          <span style={{fontSize:"20px",color:"#e8c55a",fontWeight:"700",letterSpacing:"2px"}}>{year}</span>
-                          <span style={{fontSize:"12px",color:"#906820"}}>{ys.length}本</span>
+              {statsTab==="year"&&(
+                <div>
+                  <p style={{margin:"0 0 14px",fontSize:"10px",letterSpacing:"3px",color:"#906820",textTransform:"uppercase"}}>
+                    年別 観劇記録
+                  </p>
+                  <div style={{display:"grid",gap:"20px"}}>
+                    {years.map(year=>{
+                      const ys = yearMap[year].sort((a,b)=>new Date(a.date)-new Date(b.date));
+                      return (
+                        <div key={year}>
+                          <div style={{display:"flex",alignItems:"baseline",gap:"10px",
+                            marginBottom:"8px",paddingBottom:"6px",borderBottom:"1px solid #2a2010"}}>
+                            <span style={{fontSize:"20px",color:"#e8c55a",fontWeight:"700",letterSpacing:"2px"}}>{year}</span>
+                            <span style={{fontSize:"12px",color:"#906820"}}>{ys.length}本</span>
+                          </div>
+                          <div style={{display:"grid",gap:"0"}}>
+                            {ys.map(s=>{
+                              const venue = s.venueType==="shiki"?s.venueShiki:s.venueOther;
+                              return (
+                                <div key={s.id} style={{display:"flex",alignItems:"baseline",gap:"8px",
+                                  padding:"5px 8px",borderBottom:"1px solid #1a1408"}}>
+                                  <span style={{fontSize:"11px",color:"#7a6030",flexShrink:0,fontFamily:"monospace"}}>
+                                    {s.date.slice(5)}
+                                  </span>
+                                  <span style={{fontSize:"14px",color:"#e0cc80",fontWeight:"600",flex:1,
+                                    whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                                    {s.title}
+                                  </span>
+                                  {venue&&<span style={{fontSize:"10px",color:"#6a5020",flexShrink:0,whiteSpace:"nowrap"}}>
+                                    {venue}
+                                  </span>}
+                                  {s.rating>0&&<span style={{fontSize:"10px",color:"#c0a040",flexShrink:0}}>★{s.rating}</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <div style={{display:"grid",gap:"0"}}>
-                          {ys.map(s=>{
-                            const venue = s.venueType==="shiki"?s.venueShiki:s.venueOther;
-                            return (
-                              <div key={s.id} style={{display:"flex",alignItems:"baseline",gap:"8px",
-                                padding:"5px 8px",borderBottom:"1px solid #1a1408"}}>
-                                <span style={{fontSize:"11px",color:"#7a6030",flexShrink:0,fontFamily:"monospace"}}>
-                                  {s.date.slice(5)}
-                                </span>
-                                <span style={{fontSize:"14px",color:"#e0cc80",fontWeight:"600",flex:1,
-                                  whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                                  {s.title}
-                                </span>
-                                {venue&&<span style={{fontSize:"10px",color:"#6a5020",flexShrink:0,
-                                  whiteSpace:"nowrap"}}>
-                                  {venue}
-                                </span>}
-                                {s.rating>0&&<span style={{fontSize:"10px",color:"#c0a040",flexShrink:0}}>★{s.rating}</span>}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>}
-
+              )}
             </div>
           );
         })()}
