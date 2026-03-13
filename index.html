@@ -490,6 +490,36 @@ function App() {
     try { const s=localStorage.getItem(STORAGE_KEY); if(s) setShows(JSON.parse(s)); } catch(e){}
   },[]);
 
+  const backup = () => {
+    const json = JSON.stringify(shows, null, 2);
+    const blob = new Blob([json], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = `観劇帖_backup_${date}.json`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const restore = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!Array.isArray(data)) throw new Error();
+        if (window.confirm(`${data.length}件の記録を復元します。現在のデータは上書きされます。よろしいですか？`)) {
+          persist(data);
+          alert("復元しました！");
+        }
+      } catch {
+        alert("ファイルの形式が正しくありません。");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
   const persist = arr => {
     setShows(arr);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch(e){}
@@ -566,8 +596,12 @@ function App() {
               <button onClick={()=>setModal("new")} style={{padding:"5px 14px",
                 background:"linear-gradient(135deg,#8a6520,#c9a84c)",border:"none",color:"#1a1008",
                 cursor:"pointer",fontSize:"13px",letterSpacing:"1px",fontWeight:"700"}}>＋ 追加</button>
-              <button onClick={()=>setShowImport(true)} style={{padding:"5px 10px",
-                background:"none",border:"1px solid #3a2e1e",color:"#906820",cursor:"pointer",fontSize:"13px"}}>↓ 記録</button>
+              <button onClick={backup} title="バックアップをダウンロード" style={{padding:"5px 10px",
+                background:"none",border:"1px solid #3a2e1e",color:"#906820",cursor:"pointer",fontSize:"13px"}}>💾</button>
+              <label title="バックアップから復元" style={{padding:"5px 10px",
+                border:"1px solid #3a2e1e",color:"#906820",cursor:"pointer",fontSize:"13px",display:"inline-block"}}>
+                📂<input type="file" accept=".json" onChange={restore} style={{display:"none"}}/>
+              </label>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"4px",paddingBottom:"10px"}}>
