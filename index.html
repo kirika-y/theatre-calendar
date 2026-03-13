@@ -448,6 +448,7 @@ function App() {
   const [selectedActor, setSelectedActor] = useState(null);
   const [displayMode, setDisplayMode] = useState("list");
   const [showImport, setShowImport] = useState(false);
+  const [statsTab, setStatsTab] = useState("title");
 
   const selectActor = (name) => { setSelectedActor(name); setView("actor"); };
 
@@ -693,10 +694,22 @@ function App() {
           const years = Object.keys(yearMap).sort((a,b)=>b-a);
 
           return (
-            <div style={{display:"grid",gap:"28px"}}>
+            <div>
+              {/* サブタブ */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px",marginBottom:"16px"}}>
+                {[["title","演目別"],["year","年別"]].map(([k,l])=>(
+                  <button key={k} onClick={()=>setStatsTab(k)} style={{
+                    padding:"7px 0",textAlign:"center",
+                    background:statsTab===k?"linear-gradient(135deg,#8a6520,#c9a84c)":"none",
+                    border:statsTab===k?"none":"1px solid #2a2010",
+                    color:statsTab===k?"#1a1008":"#b08838",
+                    cursor:"pointer",fontSize:"13px",letterSpacing:"1px",
+                    fontFamily:"'Cormorant Garamond',serif"}}>{l}</button>
+                ))}
+              </div>
 
               {/* 演目別 */}
-              <div>
+              {statsTab==="title"&&<div>
                 <p style={{margin:"0 0 14px",fontSize:"10px",letterSpacing:"3px",color:"#906820",textTransform:"uppercase"}}>
                   演目別 観劇回数
                 </p>
@@ -704,38 +717,30 @@ function App() {
                   {titleStats.map(([title,stat])=>{
                     const avg = stat.ratings.length>0
                       ? (stat.ratings.reduce((a,b)=>a+b,0)/stat.ratings.length).toFixed(1) : null;
-                    const maxCount = titleStats[0][1].count;
                     return (
-                      <div key={title} style={{display:"grid",gridTemplateColumns:"1fr auto",
-                        alignItems:"center",gap:"10px",padding:"8px 12px",
-                        background:"#161008",border:"1px solid #2a2010",borderRadius:"2px",
-                        borderLeft:`3px solid ${stat.count>=10?"#e8c55a":stat.count>=5?"#c0a045":"#6a5020"}`}}>
-                        <div>
-                          <div style={{fontSize:"14px",color:"#f0d870",fontWeight:"700",letterSpacing:"0.5px",marginBottom:"4px",
-                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                            {title}
-                          </div>
-                          <div style={{height:"4px",background:"#1e1808",borderRadius:"2px",overflow:"hidden"}}>
-                            <div style={{height:"100%",width:`${(stat.count/maxCount)*100}%`,
-                              background:`linear-gradient(90deg,#6a5020,#e8c55a)`,borderRadius:"2px",
-                              transition:"width 0.3s"}}/>
-                          </div>
-                        </div>
-                        <div style={{textAlign:"right",flexShrink:0}}>
-                          <div style={{fontSize:"22px",color:"#e8c55a",fontWeight:"700",lineHeight:1}}>
-                            {stat.count}
-                            <span style={{fontSize:"11px",color:"#906820",marginLeft:"2px"}}>回</span>
-                          </div>
-                          {avg&&<div style={{fontSize:"11px",color:"#b08838",marginTop:"2px"}}>★{avg}</div>}
-                        </div>
+                      <div key={title} style={{display:"flex",alignItems:"center",gap:"8px",
+                        padding:"7px 10px",background:"#161008",border:"1px solid #2a2010",
+                        borderLeft:`3px solid ${stat.count>=10?"#e8c55a":stat.count>=5?"#c0a045":"#6a5020"}`,
+                        minWidth:0}}>
+                        <span style={{fontSize:"14px",color:"#f0d870",fontWeight:"700",flex:1,
+                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {title}
+                        </span>
+                        {avg&&<span style={{fontSize:"11px",color:"#b08838",flexShrink:0}}>★{avg}</span>}
+                        <span style={{fontSize:"16px",color:"#e8c55a",fontWeight:"700",flexShrink:0,
+                          minWidth:"3em",textAlign:"right"}}>
+                          {stat.count}<span style={{fontSize:"10px",color:"#906820",marginLeft:"1px"}}>回</span>
+                        </span>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
+              </div>}
+
               {/* 年別 */}
-              <div>
+              {statsTab==="year"&&<div>
                 <p style={{margin:"0 0 14px",fontSize:"10px",letterSpacing:"3px",color:"#906820",textTransform:"uppercase"}}>
                   年別 観劇記録
                 </p>
@@ -775,7 +780,7 @@ function App() {
                     );
                   })}
                 </div>
-              </div>
+              </div>}
 
             </div>
           );
