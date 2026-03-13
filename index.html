@@ -56,6 +56,33 @@ const emptyForm = {
   eventType:"show",
 };
 
+
+const SHOW_EMOJI = {
+  "ライオンキング": "🦁",
+  "アナと雪の女王": "❄️",
+  "美女と野獣": "🌹",
+  "オペラ座の怪人": "🎭",
+  "アラジン": "🪔",
+  "ウィキッド": "🧙",
+  "マンマ・ミーア！": "🎵",
+  "キャッツ": "🐱",
+  "ゴースト＆レディ": "👻",
+  "バック・トゥ・ザ・フューチャー": "⚡",
+  "カモメに飛ぶことを教えた猫": "🐦",
+  "恋におちたシェイクスピア": "🖊️",
+  "赤毛のアン": "🍀",
+  "ふたりのロッテ": "👯",
+  "王子と少年": "👑",
+  "はじまりの樹の神話～こそあどの森の物語～": "🌳",
+  "ジーザス・クライスト＝スーパースター［エルサレム］": "✝️",
+};
+
+function getShowEmoji(title) {
+  if (SHOW_EMOJI[title]) return SHOW_EMOJI[title];
+  // 登録なければ最初の1文字
+  return title.charAt(0);
+}
+
 function formatSeat(f) {
   const parts = [f.seatFloor, f.seatBlock&&`${f.seatBlock}ブロック`, f.seatRow, f.seatNum&&`${f.seatNum}番`];
   return parts.filter(Boolean).join(" ");
@@ -763,17 +790,22 @@ function App() {
                 const dow=(firstDay+day-1)%7;
                 return (
                   <div key={day} style={{background:isT?"rgba(201,168,76,0.1)":"rgba(255,255,255,0.02)",
-                    border:isT?"1px solid #c9a84c":"1px solid #1e1808",minHeight:"60px",padding:"5px"}}>
+                    border:isT?"1px solid #c9a84c":"1px solid #1e1808",minHeight:"60px",padding:"4px",
+                    minWidth:0,overflow:"hidden"}}>
                     <span style={{fontSize:"11px",color:isT?"#e8c55a":dow===0?"#8a3030":dow===6?"#305080":"#a07830"}}>{day}</span>
-                    <div style={{marginTop:"2px",display:"flex",flexDirection:"column",gap:"1px"}}>
+                    <div style={{marginTop:"2px",display:"flex",flexDirection:"column",gap:"1px",minWidth:0}}>
                       {ds2.map(s=>{
                         const et = EVENT_TYPES[s.eventType||"show"];
+                        // 絵文字または頭文字を表示
+                        const label = getShowEmoji(s.title);
                         return (
                           <div key={s.id} onClick={()=>setModal(s)} title={`[${et.label}] ${s.title}`} style={{
-                            fontSize:"9px",background:et.bg,color:et.color,padding:"1px 3px",
+                            fontSize:"13px",background:et.bg,color:et.color,padding:"1px 2px",
                             overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                            cursor:"pointer",borderLeft:`2px solid ${et.color}`}}>
-                            {s.title}
+                            cursor:"pointer",borderLeft:`2px solid ${et.color}`,minWidth:0,
+                            display:"block",width:"100%",boxSizing:"border-box",
+                            lineHeight:"1.4",textAlign:"center"}}>
+                            {label}
                           </div>
                         );
                       })}
