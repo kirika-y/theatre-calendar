@@ -455,9 +455,6 @@ function Modal({ show, onClose, onSave, allActors, allTitles }) {
           <div><label style={lbl}>出演者</label>
             <CastInput tags={form.castTags||[]} onChange={tags=>set("castTags",tags)} allActors={allActors}/>
           </div>
-          <div><label style={lbl}>評価</label>
-            <StarRating value={form.rating} onChange={v=>set("rating",v)}/>
-          </div>
           <div><label style={lbl}>感想メモ</label>
             <textarea style={{...inp,resize:"vertical",minHeight:"80px",lineHeight:1.7}}
               value={form.memo} onChange={e=>set("memo",e.target.value)} placeholder="感想、印象に残ったシーンなど..."/>
@@ -710,7 +707,7 @@ function App() {
                 if(!day) return <div key={`e-${i}`}/>;
                 const ds=`${yr}-${String(mo+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
                 const ds2=inMonth.filter(s=>s.date===ds);
-                const isT=ds===new Date().toISOString().slice(0,10);
+                const now=new Date(); const todayStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`; const isT=ds===todayStr;
                 const dow=(firstDay+day-1)%7;
                 return (
                   <div key={day} style={{background:isT?"rgba(201,168,76,0.1)":"rgba(255,255,255,0.02)",
