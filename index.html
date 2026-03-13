@@ -410,6 +410,7 @@ function App() {
   const [calMonth, setCalMonth] = useState(new Date());
   const [selectedActor, setSelectedActor] = useState(null);
   const [displayMode, setDisplayMode] = useState("list");
+  const [showImport, setShowImport] = useState(false);
 
   const selectActor = (name) => { setSelectedActor(name); setView("actor"); };
 
