@@ -369,7 +369,7 @@ function ShowCard({ show, onEdit, onDelete, onActorClick, onDuplicate, cardMode=
 }
 
 // ── Modal ──
-function Modal({ show, onClose, onSave, allActors }) {
+function Modal({ show, onClose, onSave, allActors, allTitles }) {
   const [form, setForm] = useState(show ? {...show, castTags:show.castTags||[]} : {...emptyForm});
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
   const inp = {width:"100%",background:"#110d05",border:"1px solid #3a2e1e",borderRadius:"2px",
@@ -402,8 +402,10 @@ function Modal({ show, onClose, onSave, allActors }) {
           <div>
             <label style={lbl}>公演タイトル *</label>
             <input style={inp} value={form.title} onChange={e=>set("title",e.target.value)}
-              placeholder="例: ライオンキング" list="shiki-presets"/>
-            <datalist id="shiki-presets">{SHIKI_PRESETS.map(p=><option key={p} value={p}/>)}</datalist>
+              placeholder="例: ライオンキング" list="title-suggestions"/>
+            <datalist id="title-suggestions">
+              {[...new Set([...SHIKI_PRESETS,...(allTitles||[])])].map(p=><option key={p} value={p}/>)}
+            </datalist>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
             <div><label style={lbl}>日付 *</label>
@@ -671,8 +673,8 @@ function App() {
                     {actorData&&(
                       <div style={{textAlign:"right"}}>
                         <div style={{fontSize:"13px",color:"#b08838",letterSpacing:"1px"}}>
-                          {actorData.upS.length>0&&<span style={{color:"#8a6530",marginRight:"6px"}}>{actorData.upS.length}本予定</span>}
-                          {actorData.pastS.length}本鑑賞済
+                          <span>鑑賞済 {actorData.pastS.length}本</span>
+                          {actorData.upS.length>0&&<span style={{color:"#c8a848",marginLeft:"10px"}}>予定 {actorData.upS.length}本</span>}
                         </div>
                         {actorData.avg&&<div style={{fontSize:"15px",color:"#e8c55a",marginTop:"3px"}}>平均 ★{actorData.avg}</div>}
                       </div>
@@ -794,7 +796,7 @@ function App() {
                             return (
                               <div key={s.id} style={{display:"flex",alignItems:"baseline",gap:"8px",
                                 padding:"5px 8px",borderBottom:"1px solid #1a1408",minWidth:0}}>
-                                <span style={{fontSize:"12px",color:"#b09050",flexShrink:0,fontFamily:"monospace",fontWeight:"600"}}>{s.date.slice(5)}</span>
+                                <span style={{fontSize:"14px",color:"#c8a850",flexShrink:0,fontWeight:"700",letterSpacing:"1px"}}>{s.date.slice(5).replace("-","–")}</span>
                                 <span style={{fontSize:"14px",color:"#f0dc90",fontWeight:"700",flex:1,
                                   whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.title}</span>
                                 {venue&&<span style={{fontSize:"11px",color:"#9a7840",flexShrink:0,whiteSpace:"nowrap"}}>{venue}</span>}
@@ -854,7 +856,7 @@ function App() {
         </div>
       )}
 
-      {modal&&<Modal show={modal==="new"?null:modal} onClose={()=>setModal(null)} onSave={handleSave} allActors={collectActors(shows)}/>}
+      {modal&&<Modal show={modal==="new"?null:modal} onClose={()=>setModal(null)} onSave={handleSave} allActors={collectActors(shows)} allTitles={[...new Set(shows.map(s=>s.title).filter(Boolean))].sort()}/>}
     </div>
   );
 }
