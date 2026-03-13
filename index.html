@@ -490,8 +490,8 @@ function App() {
               fontFamily:"'Cormorant Garamond',serif"}}>＋ 追加</button>
           </div>
           {/* 2行目: タブ（幅いっぱいに均等配置） */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"4px",paddingBottom:"10px"}}>
-            {[["upcoming","予定"],["past","鑑賞済"],["calendar","暦"],["actor","役者"]].map(([k,l])=>(
+          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"4px",paddingBottom:"10px"}}>
+            {[["upcoming","予定"],["past","鑑賞済"],["calendar","暦"],["actor","役者"],["stats","統計"]].map(([k,l])=>(
               <button key={k} onClick={()=>{ setView(k); if(k!=="actor") setSelectedActor(null); }}
                 style={{padding:"6px 0",textAlign:"center",
                   background:view===k?"linear-gradient(135deg,#8a6520,#c9a84c)":"none",
@@ -506,7 +506,7 @@ function App() {
 
       <main style={{maxWidth:"800px",margin:"0 auto",padding:"16px"}}>
 
-        {view!=="calendar"&&view!=="actor"&&(
+        {view!=="calendar"&&view!=="actor"&&view!=="stats"&&(
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px",marginBottom:"14px"}}>
             <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
               {genres.length>1&&genres.map(g=>(
@@ -567,11 +567,10 @@ function App() {
                 {collectActors(shows).length===0
                   ? empty("公演に役者を登録するとここに表示されます","🎭")
                   : <div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>
-                      {collectActors(shows).map(name=>{
-                        const cnt = shows.filter(s=>(s.castTags||[]).includes(name)).length;
-                        const rated = shows.filter(s=>(s.castTags||[]).includes(name)&&s.rating>0);
-                        const avg = rated.length>0?(rated.reduce((a,s)=>a+s.rating,0)/rated.length).toFixed(1):null;
-                        return (
+                      {collectActors(shows)
+                        .map(name=>({ name, cnt: shows.filter(s=>(s.castTags||[]).includes(name)).length }))
+                        .sort((a,b)=>b.cnt-a.cnt)
+                        .map(({name,cnt})=>(
                           <button key={name} onClick={()=>setSelectedActor(name)}
                             onMouseEnter={e=>{e.currentTarget.style.background="#2a1e08";e.currentTarget.style.borderColor="#e8c55a";}}
                             onMouseLeave={e=>{e.currentTarget.style.background="#1e1608";e.currentTarget.style.borderColor="#886018";}}
@@ -579,14 +578,11 @@ function App() {
                               color:"#e8c55a",cursor:"pointer",fontSize:"15px",letterSpacing:"1px",textAlign:"left",
                               display:"flex",flexDirection:"column",gap:"4px",transition:"all 0.15s",minWidth:"120px"}}>
                             <span>{name}</span>
-                            <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
-                              <span style={{fontSize:"10px",color:"#a07830",background:"#110d05",
-                                padding:"1px 7px",borderRadius:"8px",fontFamily:"monospace"}}>{cnt}本</span>
-                              {avg&&<span style={{fontSize:"10px",color:"#8a6030"}}>★{avg}</span>}
-                            </div>
+                            <span style={{fontSize:"10px",color:"#a07830",background:"#110d05",
+                              padding:"1px 7px",borderRadius:"8px",fontFamily:"monospace",alignSelf:"flex-start"}}>{cnt}本</span>
                           </button>
-                        );
-                      })}
+                        ))
+                      }
                     </div>
                 }
               </div>
@@ -625,6 +621,117 @@ function App() {
             )}
           </div>
         )}
+
+        {view==="stats"&&(()=>{
+          const pastOnly = shows.filter(s=>new Date(s.date)<today && (s.eventType||"show")==="show");
+
+          // 演目別集計
+          const titleMap = {};
+          pastOnly.forEach(s=>{
+            if(!titleMap[s.title]) titleMap[s.title]={count:0,ratings:[],dates:[]};
+            titleMap[s.title].count++;
+            if(s.rating>0) titleMap[s.title].ratings.push(s.rating);
+            titleMap[s.title].dates.push(s.date);
+          });
+          const titleStats = Object.entries(titleMap)
+            .sort((a,b)=>b[1].count-a[1].count);
+
+          // 年別集計
+          const yearMap = {};
+          pastOnly.forEach(s=>{
+            const y = s.date.slice(0,4);
+            if(!yearMap[y]) yearMap[y]=[];
+            yearMap[y].push(s);
+          });
+          const years = Object.keys(yearMap).sort((a,b)=>b-a);
+
+          return (
+            <div style={{display:"grid",gap:"28px"}}>
+
+              {/* 演目別 */}
+              <div>
+                <p style={{margin:"0 0 14px",fontSize:"10px",letterSpacing:"3px",color:"#906820",textTransform:"uppercase"}}>
+                  演目別 観劇回数
+                </p>
+                <div style={{display:"grid",gap:"6px"}}>
+                  {titleStats.map(([title,stat])=>{
+                    const avg = stat.ratings.length>0
+                      ? (stat.ratings.reduce((a,b)=>a+b,0)/stat.ratings.length).toFixed(1) : null;
+                    const maxCount = titleStats[0][1].count;
+                    return (
+                      <div key={title} style={{display:"grid",gridTemplateColumns:"1fr auto",
+                        alignItems:"center",gap:"10px",padding:"8px 12px",
+                        background:"#161008",border:"1px solid #2a2010",borderRadius:"2px",
+                        borderLeft:`3px solid ${stat.count>=10?"#e8c55a":stat.count>=5?"#c0a045":"#6a5020"}`}}>
+                        <div>
+                          <div style={{fontSize:"14px",color:"#f0d870",fontWeight:"700",letterSpacing:"0.5px",marginBottom:"4px"}}>
+                            {title}
+                          </div>
+                          <div style={{height:"4px",background:"#1e1808",borderRadius:"2px",overflow:"hidden"}}>
+                            <div style={{height:"100%",width:`${(stat.count/maxCount)*100}%`,
+                              background:`linear-gradient(90deg,#6a5020,#e8c55a)`,borderRadius:"2px",
+                              transition:"width 0.3s"}}/>
+                          </div>
+                        </div>
+                        <div style={{textAlign:"right",flexShrink:0}}>
+                          <div style={{fontSize:"22px",color:"#e8c55a",fontWeight:"700",lineHeight:1}}>
+                            {stat.count}
+                            <span style={{fontSize:"11px",color:"#906820",marginLeft:"2px"}}>回</span>
+                          </div>
+                          {avg&&<div style={{fontSize:"11px",color:"#b08838",marginTop:"2px"}}>★{avg}</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 年別 */}
+              <div>
+                <p style={{margin:"0 0 14px",fontSize:"10px",letterSpacing:"3px",color:"#906820",textTransform:"uppercase"}}>
+                  年別 観劇記録
+                </p>
+                <div style={{display:"grid",gap:"20px"}}>
+                  {years.map(year=>{
+                    const ys = yearMap[year].sort((a,b)=>new Date(a.date)-new Date(b.date));
+                    return (
+                      <div key={year}>
+                        <div style={{display:"flex",alignItems:"baseline",gap:"10px",
+                          marginBottom:"8px",paddingBottom:"6px",borderBottom:"1px solid #2a2010"}}>
+                          <span style={{fontSize:"20px",color:"#e8c55a",fontWeight:"700",letterSpacing:"2px"}}>{year}</span>
+                          <span style={{fontSize:"12px",color:"#906820"}}>{ys.length}本</span>
+                        </div>
+                        <div style={{display:"grid",gap:"0"}}>
+                          {ys.map(s=>{
+                            const venue = s.venueType==="shiki"?s.venueShiki:s.venueOther;
+                            return (
+                              <div key={s.id} style={{display:"flex",alignItems:"baseline",gap:"8px",
+                                padding:"5px 8px",borderBottom:"1px solid #1a1408"}}>
+                                <span style={{fontSize:"11px",color:"#7a6030",flexShrink:0,fontFamily:"monospace"}}>
+                                  {s.date.slice(5)}
+                                </span>
+                                <span style={{fontSize:"14px",color:"#e0cc80",fontWeight:"600",flex:1,
+                                  whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                                  {s.title}
+                                </span>
+                                {venue&&<span style={{fontSize:"10px",color:"#6a5020",flexShrink:0,
+                                  whiteSpace:"nowrap"}}>
+                                  {venue}
+                                </span>}
+                                {s.rating>0&&<span style={{fontSize:"10px",color:"#c0a040",flexShrink:0}}>★{s.rating}</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+          );
+        })()}
 
         {view==="calendar"&&(
           <div>
