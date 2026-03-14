@@ -29,7 +29,7 @@ const { useState, useEffect } = React;
 
 const STORAGE_KEY = "theatre-calendar-shows-v2";
 const GENRES = ["ミュージカル","演劇","歌舞伎","宝塚","オペラ","バレエ","落語・演芸","コンサート","その他"];
-const SHIKI_NAMES = ["四季劇場〔春〕","四季劇場〔秋〕","電通四季劇場〔海〕","大阪四季劇場","名古屋MTG四季劇場","自由劇場"];
+const SHIKI_NAMES = ["JR東日本四季劇場〔春〕","JR東日本四季劇場〔秋〕","電通四季劇場〔海〕","有明四季劇場","大阪四季劇場","MTG名古屋四季劇場","名古屋四季劇場","自由劇場"];
 
 
 const SHIKI_PRESETS = ["ライオンキング","アナと雪の女王","美女と野獣","キャッツ","オペラ座の怪人","マンマ・ミーア！","ウィキッド","ノートルダムの鐘","ロボット・イン・ザ・ガーデン","バケモノの子","チェーザレ","ジーザス・クライスト＝スーパースター","天使にラブ・ソングを…","夢から醒めた夢","エビータ","ソング＆ダンス"];
@@ -435,7 +435,13 @@ function Modal({ show, onClose, onSave, allActors, allTitles }) {
               ? <select style={inp} value={form.venueShiki} onChange={e=>set("venueShiki",e.target.value)}>
                   {SHIKI_NAMES.map(n=><option key={n} value={n}>{n}</option>)}
                 </select>
-              : <input style={inp} value={form.venueOther} onChange={e=>set("venueOther",e.target.value)} placeholder="劇場名を入力"/>
+              : <div>
+                  <input style={inp} value={form.venueOther} onChange={e=>set("venueOther",e.target.value)}
+                    placeholder="劇場名を入力" list="past-venues"/>
+                  <datalist id="past-venues">
+                    {[...new Set((allTitles?.__venues||[]))].map(v=><option key={v} value={v}/>)}
+                  </datalist>
+                </div>
             }
           </div>
           <div>
@@ -856,7 +862,11 @@ function App() {
         </div>
       )}
 
-      {modal&&<Modal show={modal==="new"?null:modal} onClose={()=>setModal(null)} onSave={handleSave} allActors={collectActors(shows)} allTitles={[...new Set(shows.map(s=>s.title).filter(Boolean))].sort()}/>}
+      {modal&&<Modal show={modal==="new"?null:modal} onClose={()=>setModal(null)} onSave={handleSave}
+        allActors={collectActors(shows)}
+        allTitles={Object.assign([...new Set(shows.map(s=>s.title).filter(Boolean))].sort(),
+          {__venues:[...new Set(shows.filter(s=>s.venueType==="other").map(s=>s.venueOther).filter(Boolean))].sort()}
+        )}/>}
     </div>
   );
 }
