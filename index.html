@@ -186,32 +186,26 @@ function exportToICS(show) {
   const venue = show.venueType==="shiki" ? show.venueShiki : show.venueOther;
   const seat = formatSeat(show);
   const [y,m,d] = show.date.split("-").map(Number);
+  const pad = n => String(n).padStart(2,"0");
   let dtStart, dtEnd;
   if (show.time) {
     const [hh,mm] = show.time.split(":").map(Number);
-    const startUTC = new Date(Date.UTC(y,m-1,d,hh-9,mm));
-    const endUTC = new Date(Date.UTC(y,m-1,d,hh-9+2,mm));
-    const fmt = dt => dt.toISOString().replace(/[-:]/g,"").replace(".000","");
-    dtStart = fmt(startUTC); dtEnd = fmt(endUTC);
+    dtStart = `${y}${pad(m)}${pad(d)}T${pad(hh)}${pad(mm)}00`;
+    dtEnd   = `${y}${pad(m)}${pad(d)}T${pad(hh+2)}${pad(mm)}00`;
   } else {
-    const pad = n => String(n).padStart(2,"0");
-    dtStart = `${y}${pad(m)}${pad(d)}`; dtEnd = dtStart;
+    dtStart = `${y}${pad(m)}${pad(d)}`;
+    dtEnd   = `${y}${pad(m)}${pad(d)}`;
   }
-  const title = `【${et.label}】${show.title}`;
-  const desc = [venue&&`会場: ${venue}`, seat&&`座席: ${seat}`,
-    (show.castTags||[]).length>0&&`出演: ${show.castTags.join("、")}`,
-    show.memo&&`メモ: ${show.memo}`].filter(Boolean).join("\\n");
-  const isAllDay = !show.time;
-  const dtProp = isAllDay ? `DTSTART;VALUE=DATE:${dtStart}\r\nDTEND;VALUE=DATE:${dtEnd}` : `DTSTART:${dtStart}\r\nDTEND:${dtEnd}`;
-  const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//観劇帖//JP","BEGIN:VEVENT",
-    `UID:${show.id}@theatre-calendar`, dtProp, `SUMMARY:${title}`,
-    desc?`DESCRIPTION:${desc.replace(/\n/g,"\\n")}`:"", venue?`LOCATION:${venue}`:"",
-    "END:VEVENT","END:VCALENDAR"].filter(l=>l).join("\r\n");
-  const blob = new Blob([ics], {type:"text/calendar;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = `${show.title}.ics`; a.click();
-  URL.revokeObjectURL(url);
+  const title = encodeURIComponent(`【${et.label}】${show.title}`);
+  const details = encodeURIComponent([
+    venue && `会場: ${venue}`,
+    seat  && `座席: ${seat}`,
+    (show.castTags||[]).length>0 && `出演: ${show.castTags.join("、")}`,
+    show.memo && `感想: ${show.memo}`,
+  ].filter(Boolean).join("\n"));
+  const location = encodeURIComponent(venue||"");
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dtStart}/${dtEnd}&details=${details}&location=${location}`;
+  window.open(url, "_blank");
 }
 
 function copyShow(show) {
