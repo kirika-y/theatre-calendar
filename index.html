@@ -25,19 +25,15 @@
       z-index: 9999;
       background: linear-gradient(180deg,#0d0900,#110d02);
       border-bottom: 1px solid #2a2010;
-      padding-top: 0;
+      padding-top: 54px;
     }
-    /* Safari通常時 */
-    @supports (padding-top: env(safe-area-inset-top)) {
+    @supports (padding: max(0px)) {
       #app-header {
-        padding-top: env(safe-area-inset-top);
+        padding-top: max(54px, env(safe-area-inset-top));
       }
     }
-    /* ホームアプリ(standalone)時 - メディアクエリで検出 */
-    @media all and (display-mode: standalone) {
-      #app-header {
-        padding-top: 47px !important;
-      }
+    #main-content {
+      padding-top: 110px !important;
     }
     ::-webkit-scrollbar-track { background: #0d0900; }
     ::-webkit-scrollbar-thumb { background: #3a2e1e; }
@@ -694,7 +690,7 @@ function App() {
         </div>
       </header>
 
-      <main id="main-content" style={{maxWidth:"800px",margin:"0 auto",padding:"16px"}}>
+      <main id="main-content" style={{maxWidth:"800px",margin:"0 auto",padding:"0 16px 16px"}}>
 
         {view!=="calendar"&&view!=="actor"&&view!=="stats"&&(
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px",marginBottom:"14px"}}>
