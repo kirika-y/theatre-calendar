@@ -25,34 +25,12 @@
       z-index: 9999;
       background: linear-gradient(180deg,#0d0900,#110d02);
       border-bottom: 1px solid #2a2010;
-      padding-top: env(safe-area-inset-top);
+      padding-top: env(safe-area-inset-top, 0px);
     }
     ::-webkit-scrollbar-track { background: #0d0900; }
     ::-webkit-scrollbar-thumb { background: #3a2e1e; }
   </style>
-  <script>
-    // iOSステータスバー高さを確実に取得して設定
-    function applyStatusBarPadding() {
-      var header = document.getElementById('app-header');
-      if (!header) return;
-      // standaloneモード（ホームアプリ）かどうか
-      var isStandalone = window.navigator.standalone === true;
-      // CSSのenv(safe-area-inset-top)を実際に取得
-      var el = document.createElement('div');
-      el.style.cssText = 'position:fixed;top:env(safe-area-inset-top);left:0;width:1px;height:1px;';
-      document.body.appendChild(el);
-      var safeTop = el.getBoundingClientRect().top;
-      document.body.removeChild(el);
-      // standaloneかつsafe-areaが0なら強制設定
-      if (isStandalone && safeTop < 10) {
-        header.style.paddingTop = '50px';
-      } else if (safeTop > 0) {
-        header.style.paddingTop = safeTop + 'px';
-      }
-    }
-    document.addEventListener('DOMContentLoaded', applyStatusBarPadding);
-    window.addEventListener('load', applyStatusBarPadding);
-  </script>
+
 </head>
 <body>
 <div id="root"></div>
@@ -580,22 +558,7 @@ function App() {
     try { const s=localStorage.getItem(STORAGE_KEY); if(s) setShows(JSON.parse(s)); } catch(e){}
   },[]);
 
-  useEffect(()=>{
-    const updateLayout = () => {
-      const header = document.getElementById("app-header");
-      const main = document.getElementById("main-content");
-      if (!header || !main) return;
-      // ホームアプリ時はsafe-area-insetが効かないことがあるのでJS側で計算
-      const safeTop = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--sat")||"0")||0;
-      main.style.paddingTop = header.offsetHeight + "px";
-    };
-    // CSS変数でsafe-area-insetを取得できるようにする
-    document.documentElement.style.setProperty("--sat", "env(safe-area-inset-top)");
-    updateLayout();
-    setTimeout(updateLayout, 100);
-    window.addEventListener("resize", updateLayout);
-    return () => window.removeEventListener("resize", updateLayout);
-  },[]);
+
 
   const backup = () => {
     const json = JSON.stringify(shows, null, 2);
