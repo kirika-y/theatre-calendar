@@ -596,7 +596,7 @@ function App() {
 
   const today = new Date(new Date().toDateString());
   const upcoming = shows.filter(s=>new Date(s.date)>=today).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const past = shows.filter(s=>new Date(s.date)<today).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const past = shows.filter(s=>new Date(s.date)<today&&(s.eventType||"show")==="show").sort((a,b)=>new Date(b.date)-new Date(a.date));
   const genres = ["全て",...GENRES.filter(g=>shows.some(s=>s.genre===g))];
   const filtered = list => filter==="全て"?list:list.filter(s=>s.genre===filter);
 
