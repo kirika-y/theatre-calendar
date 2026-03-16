@@ -31,13 +31,27 @@
     ::-webkit-scrollbar-thumb { background: #3a2e1e; }
   </style>
   <script>
-    // ホームアプリ(standalone)時はステータスバー分の余白をJS側で設定
-    if (window.navigator.standalone) {
-      document.addEventListener('DOMContentLoaded', function() {
-        var header = document.getElementById('app-header');
-        if (header) header.style.paddingTop = '54px';
-      });
+    // iOSステータスバー高さを確実に取得して設定
+    function applyStatusBarPadding() {
+      var header = document.getElementById('app-header');
+      if (!header) return;
+      // standaloneモード（ホームアプリ）かどうか
+      var isStandalone = window.navigator.standalone === true;
+      // CSSのenv(safe-area-inset-top)を実際に取得
+      var el = document.createElement('div');
+      el.style.cssText = 'position:fixed;top:env(safe-area-inset-top);left:0;width:1px;height:1px;';
+      document.body.appendChild(el);
+      var safeTop = el.getBoundingClientRect().top;
+      document.body.removeChild(el);
+      // standaloneかつsafe-areaが0なら強制設定
+      if (isStandalone && safeTop < 10) {
+        header.style.paddingTop = '50px';
+      } else if (safeTop > 0) {
+        header.style.paddingTop = safeTop + 'px';
+      }
     }
+    document.addEventListener('DOMContentLoaded', applyStatusBarPadding);
+    window.addEventListener('load', applyStatusBarPadding);
   </script>
 </head>
 <body>
