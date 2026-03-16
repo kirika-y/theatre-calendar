@@ -724,11 +724,9 @@ function App() {
                   color:"#c4a84a",cursor:"pointer",padding:"5px 14px",fontSize:"13px",letterSpacing:"1px",marginBottom:"20px"}}>‹ 役者一覧</button>
                 <div style={{marginBottom:"20px",paddingBottom:"16px",borderBottom:"1px solid #3a2810"}}>
                   <p style={{margin:"0 0 2px",fontSize:"10px",letterSpacing:"4px",color:"#906820"}}>ACTOR</p>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"12px"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px"}}>
                     <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
-                      <div style={{position:"relative",flexShrink:0}}>
-                        <ActorPhoto name={selectedActor}/>
-                      </div>
+                      <ActorPhoto name={selectedActor}/>
                       <div>
                         <h2 style={{margin:0,fontSize:"26px",fontWeight:"700",fontStyle:"italic",color:"#e8d5a0",letterSpacing:"2px"}}>{selectedActor}</h2>
                         {actorData&&(
@@ -740,16 +738,16 @@ function App() {
                         {actorData?.avg&&<div style={{fontSize:"14px",color:"#e8c55a",marginTop:"2px"}}>平均 ★{actorData.avg}</div>}
                       </div>
                     </div>
+                    <div style={{display:"flex",gap:"4px",flexShrink:0}}>
+                      {[["list","☰"],["card","⊞"]].map(([m,icon])=>(
+                        <button key={m} onClick={()=>setDisplayMode(m)} style={{padding:"3px 10px",
+                          background:displayMode===m?"#3a2a10":"none",border:`1px solid ${displayMode===m?"#8a6520":"#2a2010"}`,
+                          color:displayMode===m?"#e8c55a":"#906820",cursor:"pointer",fontSize:"13px"}}>{icon}</button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div style={{display:"flex",justifyContent:"flex-end",gap:"4px",marginBottom:"12px"}}>
-                  {[["list","☰"],["card","⊞"]].map(([m,icon])=>(
-                    <button key={m} onClick={()=>setDisplayMode(m)} style={{padding:"3px 10px",
-                      background:displayMode===m?"#3a2a10":"none",border:`1px solid ${displayMode===m?"#8a6520":"#2a2010"}`,
-                      color:displayMode===m?"#e8c55a":"#906820",cursor:"pointer",fontSize:"13px"}}>{icon}</button>
-                  ))}
-                </div>
-                <div style={displayMode==="card"
+<div style={displayMode==="card"
                   ?{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:"10px"}
                   :{display:"grid",gap:"0"}}>
                   {(actorData?.all||[]).map(s=>(
