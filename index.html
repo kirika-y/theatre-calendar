@@ -170,9 +170,63 @@ const emptyForm = {
   castTags:[], memo:"", rating:0, eventType:"show",
 };
 
+
+function getActorPhoto(name) {
+  try { return localStorage.getItem(`actor-photo-${name}`); } catch(e) { return null; }
+}
+function saveActorPhoto(name, dataUrl) {
+  try { localStorage.setItem(`actor-photo-${name}`, dataUrl); } catch(e) {}
+}
+function removeActorPhoto(name) {
+  try { localStorage.removeItem(`actor-photo-${name}`); } catch(e) {}
+}
+
 function formatSeat(f) {
   const parts = [f.seatFloor, f.seatBlock&&`${f.seatBlock}ブロック`, f.seatRow, f.seatNum&&`${f.seatNum}番`];
   return parts.filter(Boolean).join(" ");
+}
+
+// ── ActorPhoto ──
+function ActorPhoto({ name }) {
+  const [photo, setPhoto] = React.useState(()=>getActorPhoto(name));
+  const handleFile = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      saveActorPhoto(name, ev.target.result);
+      setPhoto(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+  const handleRemove = e => {
+    e.stopPropagation();
+    if (window.confirm("写真を削除しますか？")) {
+      removeActorPhoto(name);
+      setPhoto(null);
+    }
+  };
+  return (
+    <div style={{position:"relative",width:"64px",height:"64px"}}>
+      <div style={{width:"64px",height:"64px",borderRadius:"50%",overflow:"hidden",
+        border:"2px solid #5a4020",background:"#1a1408",
+        display:"flex",alignItems:"center",justifyContent:"center"}}>
+        {photo
+          ? <img src={photo} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+          : <span style={{fontSize:"24px",color:"#5a4020"}}>🎭</span>
+        }
+      </div>
+      <label style={{position:"absolute",bottom:0,right:0,width:"20px",height:"20px",
+        borderRadius:"50%",background:"#3a2a10",border:"1px solid #8a6520",
+        display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:"10px"}}>
+        📷<input type="file" accept="image/*" onChange={handleFile} style={{display:"none"}}/>
+      </label>
+      {photo&&<button onClick={handleRemove} style={{position:"absolute",top:0,right:0,width:"18px",height:"18px",
+        borderRadius:"50%",background:"#3a0808",border:"1px solid #801818",
+        color:"#e87060",cursor:"pointer",fontSize:"9px",padding:0,lineHeight:1}}>✕</button>}
+    </div>
+  );
 }
 
 function collectActors(shows) {
@@ -668,17 +722,22 @@ function App() {
                   color:"#c4a84a",cursor:"pointer",padding:"5px 14px",fontSize:"13px",letterSpacing:"1px",marginBottom:"20px"}}>‹ 役者一覧</button>
                 <div style={{marginBottom:"20px",paddingBottom:"16px",borderBottom:"1px solid #3a2810"}}>
                   <p style={{margin:"0 0 2px",fontSize:"10px",letterSpacing:"4px",color:"#906820"}}>ACTOR</p>
-                  <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",flexWrap:"wrap",gap:"8px"}}>
-                    <h2 style={{margin:0,fontSize:"26px",fontWeight:"700",fontStyle:"italic",color:"#e8d5a0",letterSpacing:"2px"}}>{selectedActor}</h2>
-                    {actorData&&(
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:"13px",color:"#b08838",letterSpacing:"1px"}}>
-                          <span>鑑賞済 {actorData.pastS.length}本</span>
-                          {actorData.upS.length>0&&<span style={{color:"#c8a848",marginLeft:"10px"}}>予定 {actorData.upS.length}本</span>}
-                        </div>
-                        {actorData.avg&&<div style={{fontSize:"15px",color:"#e8c55a",marginTop:"3px"}}>平均 ★{actorData.avg}</div>}
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"12px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
+                      <div style={{position:"relative",flexShrink:0}}>
+                        <ActorPhoto name={selectedActor}/>
                       </div>
-                    )}
+                      <div>
+                        <h2 style={{margin:0,fontSize:"26px",fontWeight:"700",fontStyle:"italic",color:"#e8d5a0",letterSpacing:"2px"}}>{selectedActor}</h2>
+                        {actorData&&(
+                          <div style={{fontSize:"13px",color:"#b08838",letterSpacing:"1px",marginTop:"4px"}}>
+                            <span>鑑賞済 {actorData.pastS.length}本</span>
+                            {actorData.upS.length>0&&<span style={{color:"#c8a848",marginLeft:"10px"}}>予定 {actorData.upS.length}本</span>}
+                          </div>
+                        )}
+                        {actorData?.avg&&<div style={{fontSize:"14px",color:"#e8c55a",marginTop:"2px"}}>平均 ★{actorData.avg}</div>}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div style={{display:"grid",gap:"0"}}>
