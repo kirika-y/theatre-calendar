@@ -17,6 +17,16 @@
     body { background: #0d0900; color: #e8c55a; font-family: 'Cormorant Garamond', serif; }
     input, select, textarea, button { font-family: 'Cormorant Garamond', serif; }
     ::-webkit-scrollbar { width: 4px; }
+    #app-header {
+      position: fixed !important;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      background: linear-gradient(180deg,#0d0900,#110d02);
+      border-bottom: 1px solid #2a2010;
+      padding-top: env(safe-area-inset-top);
+    }
     ::-webkit-scrollbar-track { background: #0d0900; }
     ::-webkit-scrollbar-thumb { background: #3a2e1e; }
   </style>
@@ -547,6 +557,17 @@ function App() {
     try { const s=localStorage.getItem(STORAGE_KEY); if(s) setShows(JSON.parse(s)); } catch(e){}
   },[]);
 
+  useEffect(()=>{
+    const updatePadding = () => {
+      const header = document.querySelector("header");
+      const main = document.getElementById("main-content");
+      if (header && main) main.style.paddingTop = header.offsetHeight + "px";
+    };
+    updatePadding();
+    window.addEventListener("resize", updatePadding);
+    return () => window.removeEventListener("resize", updatePadding);
+  },[]);
+
   const backup = () => {
     const json = JSON.stringify(shows, null, 2);
     const blob = new Blob([json], {type:"application/json"});
@@ -640,8 +661,7 @@ function App() {
   return (
     <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at top,#1a1005 0%,#0d0900 60%)"}}>
 
-      <header style={{borderBottom:"1px solid #2a2010",padding:"10px 16px 0",
-        background:"linear-gradient(180deg,#0d0900,#110d02)",position:"sticky",top:0,zIndex:50,paddingTop:"env(safe-area-inset-top)"}}>
+      <header id="app-header" style={{padding:"10px 16px 0"}}>
         <div style={{maxWidth:"800px",margin:"0 auto"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}>
             <div style={{display:"flex",alignItems:"baseline",gap:"7px"}}>
@@ -670,7 +690,7 @@ function App() {
         </div>
       </header>
 
-      <main style={{maxWidth:"800px",margin:"0 auto",padding:"16px"}}>
+      <main id="main-content" style={{maxWidth:"800px",margin:"0 auto",padding:"16px"}}>
 
         {view!=="calendar"&&view!=="actor"&&view!=="stats"&&(
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px",marginBottom:"14px"}}>
