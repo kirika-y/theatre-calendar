@@ -30,6 +30,15 @@
     ::-webkit-scrollbar-track { background: #0d0900; }
     ::-webkit-scrollbar-thumb { background: #3a2e1e; }
   </style>
+  <script>
+    // ホームアプリ(standalone)時はステータスバー分の余白をJS側で設定
+    if (window.navigator.standalone) {
+      document.addEventListener('DOMContentLoaded', function() {
+        var header = document.getElementById('app-header');
+        if (header) header.style.paddingTop = '54px';
+      });
+    }
+  </script>
 </head>
 <body>
 <div id="root"></div>
