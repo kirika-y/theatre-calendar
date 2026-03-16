@@ -25,7 +25,7 @@
       z-index: 9999;
       background: linear-gradient(180deg,#0d0900,#110d02);
       border-bottom: 1px solid #2a2010;
-      padding-top: max(env(safe-area-inset-top), 54px);
+      padding-top: env(safe-area-inset-top);
     }
     ::-webkit-scrollbar-track { background: #0d0900; }
     ::-webkit-scrollbar-thumb { background: #3a2e1e; }
@@ -558,14 +558,20 @@ function App() {
   },[]);
 
   useEffect(()=>{
-    const updatePadding = () => {
-      const header = document.querySelector("header");
+    const updateLayout = () => {
+      const header = document.getElementById("app-header");
       const main = document.getElementById("main-content");
-      if (header && main) main.style.paddingTop = header.offsetHeight + "px";
+      if (!header || !main) return;
+      // ホームアプリ時はsafe-area-insetが効かないことがあるのでJS側で計算
+      const safeTop = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--sat")||"0")||0;
+      main.style.paddingTop = header.offsetHeight + "px";
     };
-    updatePadding();
-    window.addEventListener("resize", updatePadding);
-    return () => window.removeEventListener("resize", updatePadding);
+    // CSS変数でsafe-area-insetを取得できるようにする
+    document.documentElement.style.setProperty("--sat", "env(safe-area-inset-top)");
+    updateLayout();
+    setTimeout(updateLayout, 100);
+    window.addEventListener("resize", updateLayout);
+    return () => window.removeEventListener("resize", updateLayout);
   },[]);
 
   const backup = () => {
