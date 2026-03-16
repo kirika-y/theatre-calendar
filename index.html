@@ -208,23 +208,23 @@ function ActorPhoto({ name }) {
     }
   };
   return (
-    <div style={{position:"relative",width:"64px",height:"64px"}}>
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"6px"}}>
       <div style={{width:"64px",height:"64px",borderRadius:"50%",overflow:"hidden",
         border:"2px solid #5a4020",background:"#1a1408",
-        display:"flex",alignItems:"center",justifyContent:"center"}}>
+        display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
         {photo
           ? <img src={photo} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
           : <span style={{fontSize:"24px",color:"#5a4020"}}>🎭</span>
         }
       </div>
-      <label style={{position:"absolute",bottom:0,right:0,width:"20px",height:"20px",
-        borderRadius:"50%",background:"#3a2a10",border:"1px solid #8a6520",
-        display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:"10px"}}>
-        📷<input type="file" accept="image/*" onChange={handleFile} style={{display:"none"}}/>
-      </label>
-      {photo&&<button onClick={handleRemove} style={{position:"absolute",top:0,right:0,width:"18px",height:"18px",
-        borderRadius:"50%",background:"#3a0808",border:"1px solid #801818",
-        color:"#e87060",cursor:"pointer",fontSize:"9px",padding:0,lineHeight:1}}>✕</button>}
+      <div style={{display:"flex",gap:"4px"}}>
+        <label style={{padding:"2px 8px",background:"#2a1e08",border:"1px solid #5a4020",
+          color:"#906820",cursor:"pointer",fontSize:"10px",letterSpacing:"0.5px",borderRadius:"2px"}}>
+          📷<input type="file" accept="image/*" onChange={handleFile} style={{display:"none"}}/>
+        </label>
+        {photo&&<button onClick={handleRemove} style={{padding:"2px 8px",background:"#1a0808",
+          border:"1px solid #801818",color:"#e87060",cursor:"pointer",fontSize:"10px",borderRadius:"2px"}}>✕</button>}
+      </div>
     </div>
   );
 }
