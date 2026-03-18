@@ -196,6 +196,7 @@ function formatSeat(f) {
 // ── ActorPhoto ──
 function ActorPhoto({ name }) {
   const [photo, setPhoto] = React.useState(()=>getActorPhoto(name));
+  React.useEffect(()=>{ setPhoto(getActorPhoto(name)); setEnlarged(false); },[name]);
   const [enlarged, setEnlarged] = React.useState(false);
   const handleFile = e => {
     const file = e.target.files[0];
