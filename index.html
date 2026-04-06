@@ -562,7 +562,6 @@ function App() {
   const [showImport, setShowImport] = useState(false);
   const [statsTab, setStatsTab] = useState("title");
   const [expandedTitles, setExpandedTitles] = useState({});
-  const [expandedTitles, setExpandedTitles] = useState({});
   const [actorSearch, setActorSearch] = useState("");
 
   useEffect(()=>{
@@ -966,6 +965,7 @@ function App() {
               ))}
               <div style={{padding:"4px 0",color:"#5a4020"}}>… 他 {IMPORT_DATA.length-5} 件</div>
             </div>
+          </div>
             <div style={{display:"flex",gap:"10px",justifyContent:"flex-end"}}>
               <button onClick={()=>setShowImport(false)} style={{padding:"8px 20px",background:"none",
                 border:"1px solid #3a2e1e",color:"#906820",cursor:"pointer",fontSize:"13px"}}>キャンセル</button>
