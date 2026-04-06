@@ -562,6 +562,7 @@ function App() {
   const [showImport, setShowImport] = useState(false);
   const [statsTab, setStatsTab] = useState("title");
   const [actorSearch, setActorSearch] = useState("");
+  const [expandedTitles, setExpandedTitles] = useState({});
 
   useEffect(()=>{
     try { const s=localStorage.getItem(STORAGE_KEY); if(s) setShows(JSON.parse(s)); } catch(e){}
@@ -834,6 +835,7 @@ function App() {
               })}
             </div>
           </div>
+        </div>
         )}
 
         {view==="stats"&&(()=>{
@@ -863,16 +865,39 @@ function App() {
                 <div style={{display:"grid",gap:"4px"}}>
                   {titleStats.map(([title,stat])=>{
                     const avg=stat.ratings.length>0?(stat.ratings.reduce((a,b)=>a+b,0)/stat.ratings.length).toFixed(1):null;
+                    const isExp=expandedTitles[title];
+                    const dates=pastOnly.filter(s=>s.title===title).sort((a,b)=>new Date(b.date)-new Date(a.date));
                     return (
-                      <div key={title} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",
-                        background:"#161008",border:"1px solid #2a2010",minWidth:0,
-                        borderLeft:`3px solid ${stat.count>=10?"#e8c55a":stat.count>=5?"#c0a045":"#6a5020"}`}}>
-                        <span style={{fontSize:"14px",color:"#f0d870",fontWeight:"700",flex:1,
-                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{title}</span>
-                        {avg&&<span style={{fontSize:"11px",color:"#b08838",flexShrink:0}}>★{avg}</span>}
-                        <span style={{fontSize:"16px",color:"#e8c55a",fontWeight:"700",flexShrink:0,minWidth:"3em",textAlign:"right"}}>
-                          {stat.count}<span style={{fontSize:"10px",color:"#906820",marginLeft:"1px"}}>回</span>
-                        </span>
+                      <div key={title}>
+                        <div onClick={()=>setExpandedTitles(p=>({...p,[title]:!p[title]}))}
+                          style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",
+                            background:"#161008",border:"1px solid #2a2010",minWidth:0,cursor:"pointer",
+                            borderLeft:`3px solid ${stat.count>=10?"#e8c55a":stat.count>=5?"#c0a045":"#6a5020"}`}}>
+                          <span style={{fontSize:"14px",color:"#f0d870",fontWeight:"700",flex:1,
+                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{title}</span>
+                          {avg&&<span style={{fontSize:"11px",color:"#b08838",flexShrink:0}}>★{avg}</span>}
+                          <span style={{fontSize:"16px",color:"#e8c55a",fontWeight:"700",flexShrink:0,minWidth:"2.5em",textAlign:"right"}}>
+                            {stat.count}<span style={{fontSize:"10px",color:"#906820",marginLeft:"1px"}}>回</span>
+                          </span>
+                          <span style={{fontSize:"10px",color:"#5a4020",flexShrink:0}}>{isExp?"▲":"▼"}</span>
+                        </div>
+                        {isExp&&(
+                          <div style={{background:"#0e0b04",border:"1px solid #2a2010",borderTop:"none",paddingBottom:"4px"}}>
+                            {dates.map(s=>{
+                              const v=s.venueType==="shiki"?s.venueShiki:s.venueOther;
+                              return (
+                                <div key={s.id} style={{display:"flex",gap:"8px",padding:"5px 14px",
+                                  borderBottom:"1px solid #1a1408",minWidth:0,alignItems:"baseline"}}>
+                                  <span style={{fontSize:"13px",color:"#c8a850",flexShrink:0,fontWeight:"700"}}>
+                                    {s.date.slice(5).replace("-","/")}
+                                  </span>
+                                  {s.time&&<span style={{fontSize:"11px",color:"#7a6030",flexShrink:0}}>{s.time}</span>}
+                                  {v&&<span style={{fontSize:"11px",color:"#8a6828",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
