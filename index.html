@@ -196,8 +196,8 @@ function formatSeat(f) {
 // ── ActorPhoto ──
 function ActorPhoto({ name }) {
   const [photo, setPhoto] = React.useState(()=>getActorPhoto(name));
-  const [enlarged, setEnlarged] = React.useState(false);
   React.useEffect(()=>{ setPhoto(getActorPhoto(name)); setEnlarged(false); },[name]);
+  const [enlarged, setEnlarged] = React.useState(false);
   const handleFile = e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -411,7 +411,7 @@ function ShowCard({ show, onEdit, onDelete, onActorClick, onDuplicate, cardMode=
       <div style={{opacity:isPast?0.85:1}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"8px",marginBottom:"6px"}}>
           <div style={{minWidth:0,flex:1}}>
-            {show.genre&&!["ミュージカル","コンサート"].includes(show.genre)&&<span style={{fontSize:"9px",letterSpacing:"2px",color:"#b08838"}}>{show.genre}</span>}
+            <span style={{fontSize:"9px",letterSpacing:"2px",color:"#b08838"}}>{show.genre}</span>
             <h3 style={{margin:"2px 0 0",fontSize:"15px",fontWeight:"700",
               color:isPast?"#e8c870":"#f5e080",letterSpacing:"0.5px",lineHeight:1.3}}>{show.title}</h3>
           </div>
@@ -419,12 +419,12 @@ function ShowCard({ show, onEdit, onDelete, onActorClick, onDuplicate, cardMode=
         </div>
         <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:"6px"}}>
           <span style={{fontSize:"11px",color:"#c0a045"}}>{show.date}{show.time?` ${show.time}`:""}</span>
-          {venue&&<span style={{fontSize:"12px",color:"#c8a848",fontWeight:"600"}}>· {venue}</span>}
+          {venue&&<span style={{fontSize:"12px",color:"#c8a848"}}>· {venue}</span>}
           {seat&&<span style={{fontSize:"10px",color:"#e8c55a",fontFamily:"monospace",
             background:"#140f04",padding:"0 5px",border:"1px solid #2a2010"}}>{seat}</span>}
           {(show.castTags||[]).map(name=>(
             <span key={name} onClick={e=>{e.stopPropagation();onActorClick&&onActorClick(name);}}
-              style={{fontSize:"12px",color:"#d0aa50",fontStyle:"italic",fontWeight:"600",
+              style={{fontSize:"12px",color:"#d0aa50",fontStyle:"italic",
                 cursor:onActorClick?"pointer":"default"}}>{name}</span>
           ))}
         </div>
@@ -834,7 +834,6 @@ function App() {
               })}
             </div>
           </div>
-        </div>
         )}
 
         {view==="stats"&&(()=>{
